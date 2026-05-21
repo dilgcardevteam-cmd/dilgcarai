@@ -14,35 +14,390 @@
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
         
         <style>
+            :root {
+                --notegov-blue: #002c76;
+                --notegov-blue-deep: #031b4e;
+                --notegov-surface: #f4f7fb;
+            }
+
+            html {
+                scroll-behavior: smooth;
+            }
+
+            body {
+                font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+                background:
+                    radial-gradient(circle at top left, rgba(37, 99, 235, 0.06), transparent 32%),
+                    linear-gradient(180deg, #ffffff 0%, #f6f8fc 56%, #eef3fb 100%);
+                color: #0f172a;
+            }
+
             .sidebar-bg {
-                background-color: #0f172a !important;
+                background:
+                    radial-gradient(circle at top right, rgba(59, 130, 246, 0.22), transparent 22%),
+                    radial-gradient(circle at bottom left, rgba(37, 99, 235, 0.24), transparent 28%),
+                    linear-gradient(180deg, #07122e 0%, #081e4f 52%, #002c76 100%) !important;
             }
+
+            .dashboard-sidebar {
+                position: relative;
+                border-right: 1px solid rgba(255, 255, 255, 0.08);
+                box-shadow:
+                    0 18px 60px rgba(2, 8, 23, 0.36),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+                overflow: hidden;
+            }
+
+            .dashboard-sidebar::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background:
+                    radial-gradient(circle at 100% 0%, rgba(125, 211, 252, 0.16), transparent 24%),
+                    linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 36%);
+                pointer-events: none;
+            }
+
+            .dashboard-sidebar a {
+                text-decoration: none;
+            }
+
+            .dashboard-sidebar > div {
+                position: relative;
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 {
+                display: flex;
+                flex-direction: column;
+                gap: 0.35rem;
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > a {
+                display: flex;
+                align-items: center;
+                gap: 0.8rem;
+                min-height: 52px;
+                padding: 0.85rem 1rem;
+                border-radius: 18px;
+                border: 1px solid transparent;
+                font-size: 0.98rem;
+                line-height: 1.1;
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > a span {
+                letter-spacing: -0.01em;
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > a:hover {
+                transform: translateX(1px);
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > a.active {
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.38), rgba(37, 99, 235, 0.18)) !important;
+                border-color: rgba(147, 197, 253, 0.22);
+                box-shadow:
+                    0 16px 30px rgba(3, 27, 78, 0.24),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > a:not(.active):hover {
+                background: rgba(255, 255, 255, 0.07) !important;
+                border-color: rgba(255, 255, 255, 0.08);
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > a svg {
+                width: 20px;
+                height: 20px;
+                flex-shrink: 0;
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > a.active svg,
+            .dashboard-sidebar .space-y-1.flex-1 > a:hover svg {
+                filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.12));
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > .pt-6 {
+                padding-top: 1.2rem;
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > .pt-6 .sidebar-text-muted {
+                padding-left: 1rem;
+                font-size: 0.7rem;
+                letter-spacing: 0.22em;
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > a.active span,
+            .dashboard-sidebar .space-y-1.flex-1 > a:hover span {
+                color: #fff;
+            }
+
+            .dashboard-sidebar .px-6.py-8 > a:first-child {
+                margin-bottom: 2rem;
+                padding: 0.2rem 0.1rem 0.5rem;
+            }
+
+            .dashboard-sidebar .px-6.py-8 > a:first-child > div:first-child,
+            .dashboard-sidebar .px-5.py-6 > .flex.items-center.justify-between.mb-8 > .flex.items-center.gap-3 > div:first-child {
+                box-shadow:
+                    0 14px 28px rgba(37, 99, 235, 0.25),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            }
+
+            .dashboard-sidebar .px-6.py-8 > a:first-child p:last-child {
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 1.08rem;
+                letter-spacing: -0.02em;
+            }
+
+            .dashboard-sidebar .px-6.py-8 > a:first-child p:first-child {
+                color: rgba(96, 165, 250, 0.95);
+            }
+
+            .dashboard-sidebar .sidebar-link:hover,
+            .dashboard-sidebar .sidebar-link.active {
+                border-radius: 18px;
+            }
+
             .sidebar-link {
-                color: rgba(255, 255, 255, 0.7) !important;
-                transition: all 0.2s ease;
+                color: rgba(255, 255, 255, 0.72) !important;
+                transition: all 0.22s ease;
+                border: 1px solid transparent;
+                position: relative;
+                z-index: 1;
             }
+
             .sidebar-link:hover {
                 color: white !important;
-                background-color: rgba(255, 255, 255, 0.08) !important;
+                background: rgba(255, 255, 255, 0.07) !important;
+                border-color: rgba(255, 255, 255, 0.08);
             }
+
             .sidebar-link.active {
                 color: white !important;
-                background-color: rgba(255, 255, 255, 0.12) !important;
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.42), rgba(37, 99, 235, 0.24)) !important;
+                border-color: rgba(147, 197, 253, 0.22);
+                box-shadow: 0 18px 32px rgba(3, 27, 78, 0.28);
             }
+
+            .sidebar-link svg {
+                filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.08));
+            }
+
             .sidebar-text-muted {
-                color: rgba(255, 255, 255, 0.45) !important;
+                color: rgba(255, 255, 255, 0.5) !important;
             }
+
             .sidebar-white {
                 color: white !important;
             }
+
+            .dashboard-sidebar .space-y-1.flex-1 > a.active {
+                position: relative;
+                overflow: hidden;
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > a.active::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 38%);
+                pointer-events: none;
+            }
+
+            .app-topbar {
+                background: rgba(255, 255, 255, 0.92);
+                backdrop-filter: blur(16px);
+                border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+                box-shadow: 0 8px 30px rgba(15, 23, 42, 0.04);
+            }
+
+            .app-topbar-inner {
+                min-height: 80px;
+            }
+
+            .app-profile-chip {
+                border-radius: 9999px;
+                border: 1px solid rgba(226, 232, 240, 1);
+                background: rgba(255, 255, 255, 0.96);
+                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+                transition: all 0.2s ease;
+            }
+
+            .app-profile-chip:hover {
+                border-color: rgba(191, 219, 254, 1);
+                box-shadow: 0 14px 30px rgba(37, 99, 235, 0.08);
+            }
+
+            .btn-premium {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                border-radius: 9999px;
+                background: linear-gradient(135deg, #2359e8 0%, #0f4ccf 55%, #002c76 100%);
+                color: #fff;
+                padding: 0.9rem 1.4rem;
+                font-size: 0.875rem;
+                font-weight: 700;
+                box-shadow: 0 18px 38px rgba(2, 44, 118, 0.24);
+                transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+            }
+
+            .btn-premium:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 22px 42px rgba(2, 44, 118, 0.28);
+                filter: brightness(1.02);
+            }
+
+            .btn-premium-glass {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                border-radius: 9999px;
+                border: 1px solid rgba(226, 232, 240, 1);
+                background: rgba(255, 255, 255, 0.92);
+                color: #0f172a;
+                padding: 0.85rem 1.15rem;
+                font-size: 0.875rem;
+                font-weight: 700;
+                box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+                transition: all 0.2s ease;
+            }
+
+            .btn-premium-glass:hover {
+                border-color: rgba(191, 219, 254, 1);
+                background: #fff;
+                box-shadow: 0 16px 30px rgba(37, 99, 235, 0.08);
+                transform: translateY(-1px);
+            }
+
+            .btn-premium-outline {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                border-radius: 9999px;
+                border: 1px solid rgba(191, 219, 254, 1);
+                background: rgba(255, 255, 255, 0.92);
+                color: #0f4ccf;
+                padding: 0.85rem 1.2rem;
+                font-size: 0.875rem;
+                font-weight: 700;
+                box-shadow: 0 10px 24px rgba(37, 99, 235, 0.05);
+                transition: all 0.2s ease;
+            }
+
+            .btn-premium-outline:hover {
+                background: #eff6ff;
+                border-color: rgba(96, 165, 250, 1);
+                box-shadow: 0 16px 30px rgba(37, 99, 235, 0.08);
+                transform: translateY(-1px);
+            }
+
+            .glass-panel {
+                background: rgba(255, 255, 255, 0.82);
+                backdrop-filter: blur(18px);
+                border: 1px solid rgba(255, 255, 255, 0.72);
+                box-shadow: 0 12px 36px rgba(15, 23, 42, 0.06);
+            }
+
+            .dashboard-page .dashboard-heading {
+                font-family: 'Space Grotesk', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+                letter-spacing: -0.04em;
+            }
+
+            .dashboard-stat-card {
+                position: relative;
+                overflow: hidden;
+                border-radius: 28px;
+                border: 1px solid rgba(226, 232, 240, 0.9);
+                background: rgba(255, 255, 255, 0.92);
+                box-shadow: 0 18px 42px rgba(15, 23, 42, 0.07);
+                transition: transform 0.25s ease, box-shadow 0.25s ease;
+            }
+
+            .dashboard-stat-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 24px 54px rgba(15, 23, 42, 0.09);
+            }
+
+            .dashboard-stat-card::after {
+                content: '';
+                position: absolute;
+                inset: auto 0 0 0;
+                height: 52px;
+                background: linear-gradient(180deg, transparent 0%, rgba(59, 130, 246, 0.05) 100%);
+                pointer-events: none;
+            }
+
+            .dashboard-stat-icon {
+                width: 58px;
+                height: 58px;
+                border-radius: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+            }
+
+            .dashboard-notebook-card {
+                position: relative;
+                overflow: hidden;
+                border-radius: 30px;
+                color: #fff;
+                background: linear-gradient(135deg, #6d5ef9 0%, #4f46e5 44%, #2447e4 100%);
+                box-shadow: 0 26px 54px rgba(72, 69, 193, 0.28);
+            }
+
+            .dashboard-notebook-card::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background:
+                    radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 30%),
+                    radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.12), transparent 26%);
+                pointer-events: none;
+            }
+
+            .dashboard-notebook-card::after {
+                content: '';
+                position: absolute;
+                right: 18px;
+                bottom: 10px;
+                width: 170px;
+                height: 170px;
+                border-radius: 9999px;
+                background:
+                    radial-gradient(circle at center, rgba(255, 255, 255, 0.15) 1px, transparent 1.4px) 0 0 / 10px 10px;
+                opacity: 0.4;
+                mask-image: radial-gradient(circle at center, #000 52%, transparent 100%);
+                pointer-events: none;
+            }
+
+            @media (min-width: 1024px) {
+                .dashboard-shell {
+                    overflow: hidden;
+                }
+
+            .dashboard-shell .app-main {
+                    height: calc(100vh - 81px);
+                    overflow: hidden;
+                }
+
+                .dashboard-shell .app-content-inner {
+                    height: 100%;
+                    overflow: hidden;
+                }
+            }
         </style>
     </head>
-    <body class="font-sans antialiased bg-gray-100">
+    <body class="font-sans antialiased bg-gray-100 {{ request()->routeIs('dashboard') ? 'dashboard-shell' : '' }}">
         <div x-data="{ navOpen: false }" class="relative min-h-screen">
             <div class="relative flex min-h-screen">
                 <!-- Desktop Sidebar -->
-                <aside class="hidden lg:flex lg:flex-col lg:fixed lg:h-screen lg:inset-y-0 lg:left-0 sidebar-bg z-20" style="width: 280px;">
-                    <div class="px-6 py-8 flex flex-col h-full">
+                <aside class="hidden lg:flex lg:flex-col lg:fixed lg:h-screen lg:inset-y-0 lg:left-0 sidebar-bg dashboard-sidebar z-20" style="width: 280px;">
+                    <div class="relative z-10 px-6 py-8 flex flex-col h-full">
                         <a href="{{ route('dashboard') }}" class="flex items-center gap-4 mb-10">
                             <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                                 <x-application-logo class="h-7 w-7 shrink-0 sidebar-white" />
@@ -93,33 +448,14 @@
                             @endif
                         </div>
 
-                        <div class="mt-6">
-                            <div class="p-4 rounded-xl bg-white/5 border border-white/10">
-                                <div class="flex items-center gap-3 mb-3">
-                                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center sidebar-white font-bold text-sm">
-                                        {{ strtoupper(substr(Auth::user()->name ?? 'A', 0, 1)) }}
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-sm font-semibold sidebar-white">{{ Auth::user()->name ?? 'User' }}</p>
-                                        <p class="text-xs sidebar-text-muted">{{ ucfirst(Auth::user()->role ?? 'User') }}</p>
-                                    </div>
-                                </div>
-                                <form method="POST" action="{{ route('logout') }}" class="w-full">
-                                    @csrf
-                                    <button type="submit" class="w-full text-left px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium sidebar-white">
-                                        Log out
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
                     </div>
                 </aside>
 
                 <!-- Main Content -->
                 <div class="flex min-w-0 flex-1 flex-col" style="margin-left: 0;">
                     <!-- Mobile Header -->
-                    <header class="sticky top-0 z-30 bg-white border-b border-gray-200">
-                        <div class="flex items-center justify-between gap-4 px-4 py-4 lg:px-6 lg:py-5">
+                    <header class="sticky top-0 z-30 app-topbar">
+                        <div class="app-topbar-inner flex items-center justify-between gap-4 px-4 py-4 lg:px-6 lg:py-5">
                             <div class="flex items-center gap-3">
                                 <button type="button" class="lg:hidden px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-semibold text-gray-700" @click="navOpen = true">Menu</button>
                                 <div>
@@ -131,11 +467,11 @@
                                 @auth
                                     <!-- Desktop User Menu -->
                                     <div x-data="{ appUserMenuOpen: false }" class="relative" style="margin-right: 16px;">
-                                        <button @click="appUserMenuOpen = !appUserMenuOpen" class="flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 transition">
-                                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+                                        <button @click="appUserMenuOpen = !appUserMenuOpen" class="app-profile-chip flex items-center gap-3 px-3.5 py-2.5 hover:bg-white">
+                                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-[0_10px_18px_rgba(37,99,235,0.18)]">
                                                 {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
                                             </div>
-                                            <span class="text-sm font-medium text-gray-700">{{ Auth::user()->name ?? 'User' }}</span>
+                                            <span class="text-sm font-semibold text-slate-700">{{ Auth::user()->name ?? 'User' }}</span>
                                         </button>
                                         <div x-show="appUserMenuOpen" @click.outside="appUserMenuOpen = false" class="absolute top-12 bg-white border border-gray-200 rounded-xl shadow-xl min-w-[220px] z-50" style="right: 0;">
                                             <div class="px-5 py-4 border-b border-gray-100">
@@ -160,8 +496,8 @@
                     <div x-show="navOpen" x-transition.opacity class="fixed inset-0 z-40 bg-gray-900/50 lg:hidden" @click="navOpen = false"></div>
                     
                     <!-- Mobile Sidebar -->
-                    <aside x-show="navOpen" x-transition class="fixed inset-y-0 left-0 z-50 w-80 sidebar-bg lg:hidden">
-                        <div class="px-5 py-6 flex flex-col h-full">
+                    <aside x-show="navOpen" x-transition class="fixed inset-y-0 left-0 z-50 w-80 sidebar-bg dashboard-sidebar lg:hidden">
+                        <div class="relative z-10 px-5 py-6 flex flex-col h-full">
                             <div class="flex items-center justify-between mb-8">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
@@ -215,32 +551,12 @@
                                 @endif
                             </div>
 
-                            <div class="mt-6">
-                                <div class="p-4 rounded-xl bg-white/5 border border-white/10">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center sidebar-white font-bold text-sm">
-                                            {{ strtoupper(substr(Auth::user()->name ?? 'A', 0, 1)) }}
-                                        </div>
-                                        <div class="flex-1">
-                                            <p class="text-sm font-semibold sidebar-white">{{ Auth::user()->name ?? 'User' }}</p>
-                                            <p class="text-xs sidebar-text-muted">{{ ucfirst(Auth::user()->role ?? 'User') }}</p>
-                                        </div>
-                                    </div>
-                                    <a href="{{ route('profile.edit') }}" class="block w-full text-left px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition text-sm font-medium sidebar-white mb-2">Profile</a>
-                                    <form method="POST" action="{{ route('logout') }}" class="w-full">
-                                        @csrf
-                                        <button type="submit" class="w-full text-left px-3 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 transition text-sm font-medium sidebar-white">
-                                            Log out
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
                         </div>
                     </aside>
 
                     <!-- Main Content Area with Fixed Sidebar Margin for Desktop -->
-                    <main class="relative flex-1 px-4 pb-10 pt-6 lg:px-8 lg:pt-8" style="margin-left: 0; padding-right: 1.5rem;">
-                        <div class="lg:ml-[280px] lg:mr-4">
+                    <main class="app-main relative flex-1 px-4 pb-6 pt-6 lg:px-8 lg:pt-8" style="margin-left: 0; padding-right: 1.5rem;">
+                        <div class="app-content-inner lg:ml-[280px] lg:mr-4">
                             @if (session('status'))
                                 <div class="mb-6 rounded-xl border-emerald-200 bg-emerald-50 px-5 py-3 text-sm text-emerald-800">
                                     {{ session('status') }}
