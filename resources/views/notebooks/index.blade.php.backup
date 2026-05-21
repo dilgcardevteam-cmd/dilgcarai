@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+
+        <title>Notebooks - {{ config('app.name', 'NoteGov AI DILG') }}</title>
+
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=manrope:400,500,600,700,800|space-grotesk:400,500,700&display=swap" rel="stylesheet" />
+
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                font-family: 'Manrope', sans-serif;
+                background: #f8fafc;
+                margin: 0;
+                padding: 0;
+                color: #0f172a;
+                min-height: 100vh;
+            }
+            .container-main {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 0 48px 24px;
+            }
+            .header-top {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+                margin: 0 -48px 28px;
+                /* padding: 14px 48px; */
+                padding: 19px 48px;
+                background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+                border-bottom: 2px solid #e2e8f0;
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                text-decoration: none;
+                color: #0f172a;
+                min-width: 0;
+            }
+            .brand-icon {
+                width: 50px;
+                height: 50px;
+                border-radius: 999px;
+                background: #1e293b;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 900;
+                font-size: 14px;
+                flex: 0 0 auto;
+            }
+            .brand-title {
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 30px;
+                font-weight: 700;
+                letter-spacing: -0.02em;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .header-actions {
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                gap: 16px;
+            }
+            .user-btn {
+                padding: 8px 12px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                background: white;
+                color: #0f172a;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                transition: all 0.2s ease;
+            }
+            .user-btn:hover {
+                background: #f8fafc;
+                border-color: #cbd5e1;
+            }
+            .header-btn {
+                padding: 10px 20px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                background: white;
+                color: #0f172a;
+                font-family: 'Manrope', sans-serif;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.2s ease;
+            }
+            .header-btn:hover {
+                background: #f8fafc;
+                border-color: #cbd5e1;
+            }
+            .section-recent {
+                margin-bottom: 48px;
+            }
+            .section-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 24px;
+            }
+            .section-title-area {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .section-greeting {
+                font-size: 14px;
+                font-weight: 700;
+                color: #6366f1;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            .section-title {
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 32px;
+                font-weight: 700;
+                margin: 0;
+                color: #0f172a;
+            }
+            .section-actions {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+            .search-input {
+                padding: 10px 20px;
+                padding-left: 44px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                background: white;
+                color: #0f172a;
+                font-family: 'Manrope', sans-serif;
+                font-size: 14px;
+                min-width: 240px;
+                outline: none;
+                transition: all 0.2s ease;
+            }
+            .search-input:focus {
+                border-color: rgba(99,102,241,0.5);
+                box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+            }
+            .search-input::placeholder {
+                color: #94a3b8;
+            }
+            .search-wrapper {
+                position: relative;
+            }
+            .search-icon {
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #94a3b8;
+                width: 18px;
+                height: 18px;
+            }
+            .view-toggle {
+                display: flex;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                overflow: hidden;
+                background: white;
+            }
+            .view-btn {
+                padding: 8px 14px;
+                border: none;
+                background: transparent;
+                color: #64748b;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .view-btn.active {
+                background: rgba(99,102,241,0.12);
+                color: #4f46e5;
+            }
+            .view-btn:hover:not(.active) {
+                background: #f8fafc;
+            }
+            .sort-dropdown {
+                padding: 10px 16px;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                background: white;
+                color: #0f172a;
+                font-family: 'Manrope', sans-serif;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .create-btn {
+                padding: 10px 24px;
+                border-radius: 12px;
+                border: none;
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                font-family: 'Manrope', sans-serif;
+                font-size: 14px;
+                font-weight: 700;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.2s ease;
+            }
+            .create-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 30px rgba(99,102,241,0.3);
+            }
+            .notebooks-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 24px;
+            }
+            .notebook-card {
+                background: white;
+                border: 1px solid #e2e8f0;
+                border-radius: 20px;
+                padding: 24px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+            }
+            .notebook-card:hover {
+                border-color: rgba(99,102,241,0.35);
+                transform: translateY(-4px);
+                box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+            }
+            .notebook-card.create {
+                border: 2px dashed rgba(99,102,241,0.4);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 260px;
+            }
+            .notebook-card.create:hover {
+                border-color: rgba(99,102,241,0.7);
+                background: rgba(99,102,241,0.04);
+            }
+            .create-icon-wrapper {
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                background: rgba(99,102,241,0.2);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 16px;
+                transition: all 0.3s ease;
+            }
+            .notebook-card.create:hover .create-icon-wrapper {
+                background: rgba(99,102,241,0.3);
+                transform: scale(1.1);
+            }
+            .create-icon {
+                width: 32px;
+                height: 32px;
+                color: #818cf8;
+            }
+            .create-text {
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 18px;
+                font-weight: 700;
+                margin-bottom: 6px;
+            }
+            .create-subtext {
+                font-size: 13px;
+                color: #64748b;
+            }
+            .notebook-cover {
+                width: 72px;
+                height: 72px;
+                border-radius: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 32px;
+                margin-bottom: 20px;
+            }
+            .notebook-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+            .notebook-menu-btn {
+                padding: 4px;
+                border-radius: 8px;
+                background: transparent;
+                border: none;
+                cursor: pointer;
+                color: #94a3b8;
+                transition: all 0.2s ease;
+            }
+            .notebook-menu-btn:hover {
+                background: #f1f5f9;
+            }
+            .notebook-title {
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 20px;
+                font-weight: 700;
+                margin-bottom: 12px;
+                color: #0f172a;
+            }
+            .notebook-meta {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding-top: 16px;
+                border-top: 1px solid #e2e8f0;
+            }
+            .notebook-category {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 10px;
+                background: #f1f5f9;
+                font-size: 13px;
+                font-weight: 600;
+                color: #334155;
+            }
+            .notebook-owner {
+                margin-left: auto;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+                color: #64748b;
+            }
+            .owner-avatar {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: 700;
+            }
+            .section-featured {
+                padding-top: 32px;
+                border-top: 1px solid #e2e8f0;
+            }
+            .featured-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 24px;
+            }
+            .featured-title {
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 18px;
+                font-weight: 700;
+                color: #0f172a;
+            }
+            .view-all {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: #818cf8;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .view-all:hover {
+                color: #a5b4fc;
+            }
+            .featured-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                gap: 20px;
+            }
+            .featured-card {
+                position: relative;
+                border-radius: 20px;
+                overflow: hidden;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                height: 260px;
+            }
+            .featured-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            }
+            .featured-bg {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-size: cover;
+                background-position: center;
+                filter: brightness(0.5);
+            }
+            .featured-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(to top, rgba(15,15,35,0.95) 0%, rgba(15,15,35,0.4) 50%, transparent 100%);
+            }
+            .featured-content {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                padding: 24px;
+            }
+            .featured-source {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                color: rgba(255,255,255,0.7);
+            }
+            .featured-source-icon {
+                width: 20px;
+                height: 20px;
+                border-radius: 4px;
+                background: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 800;
+                color: #1a1a2e;
+            }
+            .featured-card-title {
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 20px;
+                font-weight: 700;
+                margin-bottom: 12px;
+            }
+            .featured-card-meta {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .featured-date {
+                font-size: 13px;
+                color: rgba(255,255,255,0.6);
+            }
+            .featured-open-btn {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #1a1a2e;
+                transition: all 0.2s ease;
+            }
+            .featured-card:hover .featured-open-btn {
+                transform: scale(1.1);
+            }
+            .notebooks-list {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .notebook-list-item {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 16px 20px;
+                background: rgba(255,255,255,0.05);
+                border:1px solid rgba(255,255,255,0.1);
+                border-radius: 16px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            .notebook-list-item:hover {
+                border-color: rgba(99,102,241,0.3);
+                background: rgba(99,102,241,0.05);
+            }
+            .notebook-list-cover {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                font-size:20px;
+            }
+            .notebook-list-info {
+                flex: 1;
+                display:flex;
+                flex-direction:column;
+                gap:4px;
+            }
+            .notebook-list-title {
+                font-family:'Space Grotesk', sans-serif;
+                font-size:16px;
+                font-weight:700;
+                color:#0f172a;
+            }
+            .notebook-list-meta {
+                display:flex;
+                gap:16px;
+                font-size:13px;
+                color:#64748b;
+            }
+            .notebooks-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .notebooks-table th {
+                text-align: left;
+                padding: 12px 16px;
+                font-family: 'Space Grotesk', sans-serif;
+                font-size: 14px;
+                font-weight: 700;
+                color: #334155;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .notebooks-table td {
+                padding: 16px;
+                vertical-align: middle;
+                border-bottom: 1px solid #f1f5f9;
+            }
+            .notebooks-table tbody tr {
+                transition: background 0.2s ease;
+            }
+            .notebooks-table tbody tr:hover {
+                background: #f8fafc;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container-main" x-data="notebookIndex()">
+            <script>
+                function notebookIndex() {
+                    return {
+                        userMenuOpen: false, 
+                        showRenameModal: false,
+                        renameNotebookId: null,
+                        renameTitle: '',
+                        searchQuery: '',
+                        viewMode: 'grid',
+                        sortBy: 'recent',
+                        allNotebooks: @json($userNotebooks),
+                        selectedNotebooks: [],
+                        bulkAction: '',
+                        showBulkActions: false,
+
+                        toggleNotebook(id) {
+                            const index = this.selectedNotebooks.indexOf(id);
+                            if (index > -1) {
+                                this.selectedNotebooks.splice(index, 1);
+                            } else {
+                                this.selectedNotebooks.push(id);
+                            }
+                            this.showBulkActions = this.selectedNotebooks.length > 0;
+                        },
+                        
+                        toggleSelectAll() {
+                            if (this.selectedNotebooks.length === this.filteredNotebooks.length) {
+                                this.selectedNotebooks = [];
+                            } else {
+                                this.selectedNotebooks = this.filteredNotebooks.map(n => n.id);
+                            }
+                            this.showBulkActions = this.selectedNotebooks.length > 0;
+                        },
+                        
+                        get allSelected() {
+                            return this.filteredNotebooks.length > 0 && 
+                                this.selectedNotebooks.length === this.filteredNotebooks.length;
+                        },
+
+                        get filteredNotebooks() {
+                            let notebooks = [...this.allNotebooks];
+
+                            if (this.searchQuery.trim() !== '') {
+                                const q = this.searchQuery.toLowerCase();
+                                notebooks = notebooks.filter(n => 
+                                    n.title.toLowerCase().includes(q)
+                                );
+                            }
+
+                            if (this.sortBy === 'title') {
+                                notebooks.sort((a, b) => a.title.localeCompare(b.title));
+                            } else if (this.sortBy === 'oldest') {
+                                notebooks.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                            } else {
+                                notebooks.sort((a, b) => new Date(b.last_activity_at) - new Date(a.last_activity_at));
+                            }
+
+                            return notebooks;
+                        }
+                    }
+                }
+            </script>
+            <div class="header-top">
+                <a href="{{ route('notebooks.index') }}" class="brand" aria-label="Notebooks">
+                    <div class="brand-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:30px; height:30px; color:white;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                    </div>
+                    <div class="brand-title">DILG | NoteGov AI</div>
+                </a>
+
+                <div class="header-actions">
+                    <a href="{{ route('profile.edit') }}" class="header-btn">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px; height:18px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        </svg>
+                        Settings
+                    </a>
+                    <div class="relative">
+                        <button @click="userMenuOpen = !userMenuOpen" class="user-btn" aria-label="User menu">
+                            <svg fill="currentColor" viewBox="0 0 24 24" style="width:18px; height:18px; color:#64748b;">
+                                <path d="M3 3h7v7H3V3zm11 0h7v7h-7V3zm0 11h7v7h-7v-7zM3 14h7v7H3v-7z"/>
+                            </svg>
+                            <div style="width:24px; height:24px; border-radius:50%; background:linear-gradient(135deg, #8b5cf6, #a855f7); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:white;">
+                                {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
+                            </div>
+                        </button>
+                        <div x-show="userMenuOpen" @click.outside="userMenuOpen = false" style="position:absolute; top:50px; right:0; background:white; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 20px 40px rgba(15,23,42,0.14); min-width:220px; z-index:100;">
+                            <div style="padding:16px 20px; border-bottom:1px solid #e2e8f0;">
+                                <p style="font-size:14px; font-weight:700; margin:0; color:#0f172a;">{{ Auth::user()->name ?? 'User' }}</p>
+                                <p style="font-size:13px; color:#64748b; margin:4px 0 0;">{{ Auth::user()->email ?? '' }}</p>
+                            </div>
+                            <a href="{{ route('profile.edit') }}" style="display:block; padding:12px 20px; text-align:left; background:none; border:none; cursor:pointer; font-size:14px; font-weight:600; color:#0f172a; text-decoration:none;">Profile</a>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" style="width:100%; padding:12px 20px; text-align:left; background:none; border:none; cursor:pointer; font-size:14px; font-weight:600; color:#ef4444;">
+                                    Log out
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-recent">
+                <template x-if="showBulkActions">
+                    <form method="POST" action="{{ route('notebooks.bulk') }}" class="flex items-center gap-3 mb-4 p-4 bg-white/10 border border-white/20 rounded-2xl w-full">
+                        @csrf
+                        <template x-for="id in selectedNotebooks" :key="id">
+                            <input type="hidden" name="notebook_ids[]" :value="id">
+                        </template>
+                        <span class="text-white/70 font-semibold" x-text="selectedNotebooks.length + ' selected'"></span>
+                        <select name="action" x-model="bulkAction" required class="bg-white/10 border border-white/20 text-white rounded-xl px-3 py-2">
+                            <option value="">Select action</option>
+                            <option value="delete">Delete</option>
+                            <option value="pin">Pin</option>
+                            <option value="unpin">Unpin</option>
+                            <option value="share">Share</option>
+                        </select>
+                        <button type="submit" :disabled="!bulkAction" class="btn-premium" onclick="return confirm('Are you sure you want to perform this action?')">Apply</button>
+                        <button type="button" @click="selectedNotebooks = []; showBulkActions = false;" class="btn-premium-outline">Clear</button>
+                    </form>
+                </template>
+                <div class="section-header">
+                    <div class="section-title-area" style="display:flex; align-items:center; gap:12px;">
+                        <input type="checkbox" :checked="allSelected" @click="toggleSelectAll()" class="w-5 h-5 rounded" style="accent-color: #6366f1;">
+                        <div>
+                            <div class="section-greeting">Good morning, {{ explode(' ', Auth::user()->name)[0] ?? 'User' }}</div>
+                            <h2 class="section-title">Recent notebooks</h2>
+                        </div>
+                    </div>
+                    <div class="section-actions">
+                        <div class="search-wrapper">
+                            <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <input type="text" class="search-input" placeholder="Search notebooks..." x-model="searchQuery">
+                        </div>
+                        <div class="view-toggle">
+                            <button class="view-btn" :class="viewMode === 'grid' ? 'active' : ''" @click="viewMode = 'grid'">
+                                <svg fill="currentColor" viewBox="0 0 24 24" style="width:18px; height:18px;">
+                                    <path d="M3 3h7v7H3V3zm11 0h7v7h-7V3zm0 11h7v7h-7v-7zM3 14h7v7H3v-7z"/>
+                                </svg>
+                            </button>
+                            <button class="view-btn" :class="viewMode === 'list' ? 'active' : ''" @click="viewMode = 'list'">
+                                <svg fill="currentColor" viewBox="0 0 24 24" style="width:18px; height:18px;">
+                                    <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div x-data="{ sortDropdownOpen: false }" class="relative">
+                            <button @click="sortDropdownOpen = !sortDropdownOpen" class="sort-dropdown">
+                                <span x-text="sortBy === 'recent' ? 'Most recent' : (sortBy === 'title' ? 'Title' : 'Oldest')"></span> ▾
+                            </button>
+                            <div x-show="sortDropdownOpen" @click.outside="sortDropdownOpen = false" style="position:absolute; top:45px; right:0; background:white; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 10px 30px rgba(15,23,42,0.12); min-width:160px; z-index:100;">
+                                <button @click="sortBy = 'recent'; sortDropdownOpen = false;" style="width:100%; padding:10px 16px; text-align:left; background:none; border:none; cursor:pointer; font-size:14px; font-weight:600; color:#0f172a; border-bottom:1px solid #e2e8f0;">
+                                    Most recent
+                                </button>
+                                <button @click="sortBy = 'title'; sortDropdownOpen = false;" style="width:100%; padding:10px 16px; text-align:left; background:none; border:none; cursor:pointer; font-size:14px; font-weight:600; color:#0f172a; border-bottom:1px solid #e2e8f0;">
+                                    Title
+                                </button>
+                                <button @click="sortBy = 'oldest'; sortDropdownOpen = false;" style="width:100%; padding:10px 16px; text-align:left; background:none; border:none; cursor:pointer; font-size:14px; font-weight:600; color:#0f172a;">
+                                    Oldest
+                                </button>
+                            </div>
+                        </div>
+                        <form method="POST" action="{{ route('notebooks.create.quick') }}">
+                            @csrf
+                            <button type="submit" class="create-btn">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px; height:18px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                Create new
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <template x-if="viewMode === 'grid'">
+                    <div class="notebooks-grid">
+                        <form method="POST" action="{{ route('notebooks.create.quick') }}" class="notebook-card create">
+                            @csrf
+                            <button
+                                type="submit"
+                                style="all: unset; width: 100%; height: 100%; cursor: pointer; display: flex; flex-direction: column; align-items: center;"
+                                aria-label="Create new notebook"
+                            >
+                                <div class="create-icon-wrapper">
+                                    <svg class="create-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                </div>
+                                <div class="create-text">Create new notebook</div>
+                                <div class="create-subtext">Start from scratch</div>
+                            </button>
+                        </form>
+
+                        <template x-for="notebook in filteredNotebooks" :key="notebook.id">
+                            <div class="notebook-card" style="cursor: default;">
+                                <div class="notebook-header" style="gap: 8px;">
+                                    <input type="checkbox" :checked="selectedNotebooks.includes(notebook.id)" @click.stop="toggleNotebook(notebook.id)" class="w-5 h-5 rounded" style="accent-color: #6366f1;">
+                                    <a :href="'/notebooks/' + notebook.id" class="notebook-cover" :style="{ background: notebook.cover_color ?? '#6366f1' }" style="text-decoration: none; color: inherit;">
+                                        📓
+                                    </a>
+                                    <div x-data="{ notebookMenuOpen: false }" class="relative">
+                                        <button @click="notebookMenuOpen = !notebookMenuOpen" class="notebook-menu-btn">
+                                            <svg fill="currentColor" viewBox="0 0 24 24" style="width:20px; height:20px;">
+                                                <circle cx="12" cy="6" r="2"/>
+                                                <circle cx="12" cy="12" r="2"/>
+                                                <circle cx="12" cy="18" r="2"/>
+                                            </svg>
+                                        </button>
+                                        <div x-show="notebookMenuOpen" @click.outside="notebookMenuOpen = false" style="position:absolute; top:30px; right:0; background:white; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 10px 30px rgba(15,23,42,0.12); min-width:160px; z-index:100;">
+                                            <button @click="notebookMenuOpen = false; showRenameModal = true; renameNotebookId = notebook.id; renameTitle = notebook.title;" style="width:100%; padding:10px 16px; text-align:left; background:none; border:none; cursor:pointer; font-size:14px; font-weight:600; color:#0f172a; border-bottom:1px solid #e2e8f0;">
+                                                Rename
+                                            </button>
+                                            <form method="POST" :action="'/notebooks/' + notebook.id + '/duplicate'">
+                                                @csrf
+                                                <button type="submit" style="width:100%; padding:10px 16px; text-align:left; background:none; border:none; cursor:pointer; font-size:14px; font-weight:600; color:#0f172a; border-bottom:1px solid #e2e8f0;">
+                                                    Duplicate
+                                                </button>
+                                            </form>
+                                            <form method="POST" :action="'/notebooks/' + notebook.id" onsubmit="return confirm('Are you sure you want to delete this notebook?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" style="width:100%; padding:10px 16px; text-align:left; background:none; border:none; cursor:pointer; font-size:14px; font-weight:600; color:#ef4444;">
+                                                    Remove
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <a :href="'/notebooks/' + notebook.id" style="text-decoration: none; color: inherit;">
+                                    <div class="notebook-title" x-text="notebook.title"></div>
+                                    <div class="notebook-meta">
+                                        <div class="notebook-category">
+                                            <svg fill="currentColor" viewBox="0 0 24 24" style="width:14px; height:14px;">
+                                                <path d="M3 7V5c0-1.1.9-2 2-2h4l2 2h8c1.1 0 2 .9 2 2v2H3zm0 12h18V9H3v10z"/>
+                                            </svg>
+                                            <span x-text="notebook.category?.name ?? 'Projects'"></span>
+                                        </div>
+                                        <div class="notebook-owner">
+                                            <div class="owner-avatar" x-text="notebook.owner?.name?.charAt(0).toUpperCase() ?? 'U'"></div>
+                                            <span>You</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <template x-if="viewMode === 'list'">
+                    <table class="notebooks-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" :checked="allSelected" @click="toggleSelectAll()" class="w-5 h-5 rounded" style="accent-color: #6366f1;">
+                                </th>
+                                <th>Title</th>
+                                <th>Sources</th>
+                                <th>Created</th>
+                                <th>Role</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6">
+                                    <form method="POST" action="{{ route('notebooks.create.quick') }}" style="display:flex; align-items:center; gap:16px; padding:16px; border:2px dashed rgba(99,102,241,0.35); border-radius:12px; background:white;">
+                                        @csrf
+                                        <button
+                                            type="submit"
+                                            style="all: unset; width: 100%; cursor: pointer; display: flex; align-items: center; gap: 16px;"
+                                            aria-label="Create new notebook"
+                                        >
+                                            <div style="width:40px; height:40px; border-radius:10px; background:rgba(99,102,241,0.12); display:flex; align-items:center; justify-content:center;">
+                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:20px; height:20px; color:#4f46e5;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <div style="font-family:'Space Grotesk', sans-serif; font-size:15px; font-weight:700; color:#0f172a;">Create new notebook</div>
+                                                <div style="font-size:13px; color:#64748b;">Start from scratch</div>
+                                            </div>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <template x-for="notebook in filteredNotebooks" :key="notebook.id">
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" :checked="selectedNotebooks.includes(notebook.id)" @click.stop="toggleNotebook(notebook.id)" class="w-5 h-5 rounded" style="accent-color: #6366f1;">
+                                    </td>
+                                    <td>
+                                        <div style="display:flex; align-items:center; gap:12px;">
+                                            <a :href="'/notebooks/' + notebook.id" class="notebook-list-cover" :style="{ background: notebook.cover_color ?? '#6366f1' }" style="text-decoration: none; color: inherit; width:36px; height:36px; border-radius:8px; font-size:18px;">
+                                                📓
+                                            </a>
+                                            <a :href="'/notebooks/' + notebook.id" style="text-decoration: none; font-family:'Space Grotesk', sans-serif; font-size:15px; font-weight:700; color:#0f172a;" x-text="notebook.title"></a>
+                                        </div>
+                                    </td>
+                                    <td style="font-size:14px; color:#64748b;" x-text="(notebook.sources_count ?? 0) + ' Sources'"></td>
+                                    <td style="font-size:14px; color:#64748b;" x-text="new Date(notebook.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })"></td>
+                                    <td style="font-size:14px; color:#64748b;">Owner</td>
+                                    <td style="text-align: right;">
+                                        <div x-data="{ notebookMenuOpen: false }" class="relative" style="display:inline-block;">
+                                            <button @click="notebookMenuOpen = !notebookMenuOpen" class="notebook-menu-btn">
+                                                <svg fill="currentColor" viewBox="0 0 24 24" style="width:20px; height:20px;">
+                                                    <circle cx="12" cy="6" r="2"/>
+                                                    <circle cx="12" cy="12" r="2"/>
+                                                    <circle cx="12" cy="18" r="2"/>
+                                                </svg>
+                                            </button>
+                                            <div x-show="notebookMenuOpen" @click.outside="notebookMenuOpen = false" style="position:absolute; top:30px; right:0; background:white; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 10px 30px rgba(15,23,42,0.12); min-width:160px; z-index:100;">
+                                                <button @click="notebookMenuOpen = false; showRenameModal = true; renameNotebookId = notebook.id; renameTitle = notebook.title;" style="width:100%; padding:10px 16px; text-align:left; background:none; border:none; cursor:pointer; font-size:14px; font-weight:600; color:#0f172a; border-bottom:1px solid #e2e8f0;">
+                                                    Rename
+                                                </button>
+                                                <form method="POST" :action="'/notebooks/' + notebook.id + '/duplicate'">
+                                                    @csrf
+                                                    <button type="submit" style="width:100%; padding:10px 16px; text-align:left; background:none; border:none; cursor:pointer; font-size:14px; font-weight:600; color:#0f172a; border-bottom:1px solid #e2e8f0;">
+                                                        Duplicate
+                                                    </button>
+                                                </form>
+                                                <form method="POST" :action="'/notebooks/' + notebook.id" onsubmit="return confirm('Are you sure you want to delete this notebook?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" style="width:100%; padding:10px 16px; text-align:left; background:none; border:none; cursor:pointer; font-size:14px; font-weight:600; color:#ef4444;">
+                                                        Remove
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </template>
+            </div>
+
+            @if ($featuredNotebooks->isNotEmpty())
+                <div class="section-featured">
+                    <div class="featured-header">
+                        <div class="featured-title">Featured notebooks</div>
+                        <div class="view-all">
+                            View all
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:16px; height:16px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="featured-grid">
+                        @foreach ($featuredNotebooks as $index => $notebook)
+                            <a href="{{ route('notebooks.show', $notebook) }}" class="featured-card">
+                                <div class="featured-bg" style="background: linear-gradient(135deg, {{ $notebook->cover_color ?? '#6366f1' }} 0%, #0f0f23 100%);"></div>
+                                <div class="featured-overlay"></div>
+                                <div class="featured-content">
+                                    <div class="featured-source">
+                                        <div class="featured-source-icon">
+                                            {{ strtoupper(substr($notebook->owner->name ?? 'N', 0, 1)) }}
+                                        </div>
+                                        {{ $notebook->owner->name ?? 'NoteGov' }}
+                                    </div>
+                                    <div class="featured-card-title">{{ $notebook->title }}</div>
+                                    <div class="featured-card-meta">
+                                        <div class="featured-date">{{ $notebook->created_at->format('d M Y') }} • {{ $notebook->sources_count }} sources</div>
+                                        <div class="featured-open-btn">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px; height:18px;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            <div x-show="showRenameModal" style="position:fixed; inset:0; background:rgba(15,23,42,0.45); display:flex; align-items:center; justify-content:center; z-index:200;" x-transition>
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:24px; padding:32px; max-width:500px; width:90%; box-shadow:0 30px 60px rgba(15,23,42,0.18);">
+                    <h3 style="font-family:'Space Grotesk', sans-serif; font-size:28px; font-weight:700; color:#0f172a; margin:0 0 24px;">Rename Notebook</h3>
+                    <form method="POST" :action="`/notebooks/${renameNotebookId}`">
+                        @csrf
+                        @method('PATCH')
+                        <div style="margin-bottom:24px;">
+                            <label style="display:block; font-family:'Manrope', sans-serif; font-size:14px; font-weight:600; color:#334155; margin-bottom:8px;">Notebook Name</label>
+                            <input type="text" name="title" x-model="renameTitle" required style="width:100%; padding:16px 20px; border:1px solid #e2e8f0; background:white; color:#0f172a; font-family:'Manrope', sans-serif; font-size:16px; border-radius:16px; outline:none;">
+                        </div>
+                        <div style="display:flex; gap:12px;">
+                            <button type="button" @click="showRenameModal = false" style="flex:1; padding:16px 32px; border:1px solid #e2e8f0; border-radius:16px; background:white; color:#0f172a; font-family:'Manrope', sans-serif; font-size:16px; font-weight:600; cursor:pointer;">Cancel</button>
+                            <button type="submit" style="flex:1; padding:16px 32px; border:none; border-radius:16px; background:linear-gradient(135deg,#6366f1,#8b5cf6); color:white; font-family:'Manrope', sans-serif; font-size:16px; font-weight:600; cursor:pointer;">Save</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
