@@ -76,9 +76,9 @@
                 display: flex;
                 align-items: center;
                 gap: 0.8rem;
-                min-height: 52px;
-                padding: 0.85rem 1rem;
-                border-radius: 18px;
+                min-height: 58px;
+                padding: 0.95rem 1rem;
+                border-radius: 20px;
                 border: 1px solid transparent;
                 font-size: 0.98rem;
                 line-height: 1.1;
@@ -89,14 +89,14 @@
             }
 
             .dashboard-sidebar .space-y-1.flex-1 > a:hover {
-                transform: translateX(1px);
+                transform: translateX(2px);
             }
 
             .dashboard-sidebar .space-y-1.flex-1 > a.active {
-                background: linear-gradient(135deg, rgba(59, 130, 246, 0.38), rgba(37, 99, 235, 0.18)) !important;
-                border-color: rgba(147, 197, 253, 0.22);
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(37, 99, 235, 0.24)) !important;
+                border-color: rgba(147, 197, 253, 0.34);
                 box-shadow:
-                    0 16px 30px rgba(3, 27, 78, 0.24),
+                    0 20px 38px rgba(3, 27, 78, 0.3),
                     inset 0 1px 0 rgba(255, 255, 255, 0.08);
             }
 
@@ -106,8 +106,8 @@
             }
 
             .dashboard-sidebar .space-y-1.flex-1 > a svg {
-                width: 20px;
-                height: 20px;
+                width: 21px;
+                height: 21px;
                 flex-shrink: 0;
             }
 
@@ -122,8 +122,8 @@
 
             .dashboard-sidebar .space-y-1.flex-1 > .pt-6 .sidebar-text-muted {
                 padding-left: 1rem;
-                font-size: 0.7rem;
-                letter-spacing: 0.22em;
+                font-size: 0.72rem;
+                letter-spacing: 0.24em;
             }
 
             .dashboard-sidebar .space-y-1.flex-1 > a.active span,
@@ -131,15 +131,25 @@
                 color: #fff;
             }
 
+            .dashboard-sidebar .space-y-1.flex-1 > a span {
+                font-weight: 600;
+                color: rgba(255, 255, 255, 0.78);
+            }
+
+            .dashboard-sidebar .space-y-1.flex-1 > a.active span {
+                font-weight: 700;
+                color: #fff;
+            }
+
             .dashboard-sidebar .px-6.py-8 > a:first-child {
-                margin-bottom: 2rem;
-                padding: 0.2rem 0.1rem 0.5rem;
+                margin-bottom: 2.3rem;
+                padding: 0.15rem 0.1rem 0.6rem;
             }
 
             .dashboard-sidebar .px-6.py-8 > a:first-child > div:first-child,
             .dashboard-sidebar .px-5.py-6 > .flex.items-center.justify-between.mb-8 > .flex.items-center.gap-3 > div:first-child {
                 box-shadow:
-                    0 14px 28px rgba(37, 99, 235, 0.25),
+                    0 16px 32px rgba(37, 99, 235, 0.32),
                     inset 0 1px 0 rgba(255, 255, 255, 0.08);
             }
 
@@ -155,7 +165,7 @@
 
             .dashboard-sidebar .sidebar-link:hover,
             .dashboard-sidebar .sidebar-link.active {
-                border-radius: 18px;
+                border-radius: 20px;
             }
 
             .sidebar-link {
@@ -200,7 +210,7 @@
                 content: '';
                 position: absolute;
                 inset: 0;
-                background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 38%);
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), transparent 38%);
                 pointer-events: none;
             }
 

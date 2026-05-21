@@ -1176,6 +1176,14 @@
                 text-overflow: ellipsis;
             }
 
+            .web-source-url {
+                margin-top: 2px;
+                font-size: 10px;
+                color: #64748b;
+                line-height: 1.35;
+                word-break: break-all;
+            }
+
             .web-source-link {
                 text-decoration: none;
             }
@@ -1365,10 +1373,310 @@
                 background: #1d4ed8;
                 color: #ffffff;
             }
+            body.notebook-detail-page {
+                background:
+                    radial-gradient(circle at top left, rgba(0, 44, 118, 0.08), transparent 28%),
+                    radial-gradient(circle at bottom right, rgba(37, 99, 235, 0.06), transparent 24%),
+                    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            }
+            body.notebook-detail-page::before {
+                content: '';
+                position: fixed;
+                inset: 0;
+                pointer-events: none;
+                background-image:
+                    radial-gradient(rgba(0, 44, 118, 0.045) 1px, transparent 1px),
+                    radial-gradient(rgba(0, 44, 118, 0.025) 1px, transparent 1px);
+                background-size: 22px 22px, 44px 44px;
+                background-position: 0 0, 11px 11px;
+                mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0));
+                opacity: 0.45;
+                z-index: 0;
+            }
+            .notebook-shell {
+                position: relative;
+                z-index: 1;
+            }
+            .notebook-topbar {
+                background: rgba(255, 255, 255, 0.96) !important;
+                border-bottom: 1px solid #dbe4f0 !important;
+                padding: 18px 32px !important;
+                box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+                position: relative;
+                z-index: 2;
+            }
+            .topbar-back-btn {
+                width: 52px !important;
+                height: 52px !important;
+                border-radius: 999px !important;
+                background: #ffffff !important;
+                border: 1px solid #dbe4f0 !important;
+                box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+            }
+            .topbar-back-btn:hover {
+                background: #f8fbff !important;
+                border-color: rgba(0, 44, 118, 0.18) !important;
+            }
+            .topbar-mark {
+                width: 52px !important;
+                height: 52px !important;
+                border-radius: 999px !important;
+                background: linear-gradient(135deg, #002C76, #1d4ed8) !important;
+                box-shadow: 0 12px 24px rgba(0, 44, 118, 0.22);
+            }
+            .topbar-title {
+                font-family: 'Space Grotesk', sans-serif !important;
+                font-size: 28px !important;
+                font-weight: 700 !important;
+                color: #0f172a !important;
+            }
+            .create-notebook-btn {
+                padding: 14px 28px !important;
+                background: linear-gradient(135deg, #002C76 0%, #1d4ed8 100%) !important;
+                color: #ffffff !important;
+                border-radius: 999px !important;
+                font-weight: 800 !important;
+                box-shadow: 0 14px 28px rgba(0, 44, 118, 0.22);
+            }
+            .create-notebook-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 18px 34px rgba(0, 44, 118, 0.28);
+            }
+            .share-notebook-btn {
+                padding: 12px 20px !important;
+                border: 1px solid rgba(0, 44, 118, 0.18) !important;
+                background: #ffffff !important;
+                color: #002C76 !important;
+                box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+            }
+            .share-notebook-btn:hover {
+                background: #f8fbff !important;
+                border-color: rgba(0, 44, 118, 0.28) !important;
+            }
+            .profile-chip {
+                width: 44px !important;
+                height: 44px !important;
+                background: linear-gradient(135deg, #002C76, #2563eb) !important;
+                box-shadow: 0 12px 24px rgba(0, 44, 118, 0.20);
+            }
+            .panel-left, .panel-right {
+                background: rgba(255, 255, 255, 0.94) !important;
+                border-color: #dbe4f0 !important;
+                box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+                backdrop-filter: blur(12px);
+            }
+            .panel-right {
+                background:
+                    radial-gradient(circle at 18% 20%, rgba(0, 44, 118, 0.04), transparent 24%),
+                    radial-gradient(circle at 82% 70%, rgba(96, 165, 250, 0.05), transparent 22%),
+                    rgba(255, 255, 255, 0.95) !important;
+            }
+            .panel-header {
+                padding: 22px 24px !important;
+                border-bottom: 1px solid #dbe4f0 !important;
+                background: rgba(255, 255, 255, 0.82) !important;
+            }
+            .add-sources-btn {
+                padding: 16px 20px !important;
+                border: 2px dashed rgba(0, 44, 118, 0.28) !important;
+                border-radius: 22px !important;
+                color: #002C76 !important;
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98)) !important;
+                box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
+            }
+            .add-sources-btn:hover {
+                border-color: rgba(0, 44, 118, 0.42) !important;
+                background: #ffffff !important;
+                transform: translateY(-1px);
+                box-shadow: 0 16px 28px rgba(0, 44, 118, 0.08);
+            }
+            .sources-card {
+                background: linear-gradient(180deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 0.96)) !important;
+                border: 1px solid #dbe4f0 !important;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 14px 30px rgba(15, 23, 42, 0.04);
+            }
+            .sources-header-icon {
+                background: linear-gradient(135deg, rgba(0, 44, 118, 0.08), rgba(96, 165, 250, 0.16)) !important;
+                color: #002C76 !important;
+            }
+            .sources-count-badge {
+                background: rgba(0, 44, 118, 0.10) !important;
+                color: #002C76 !important;
+            }
+            .search-option-btn {
+                border: 1px solid rgba(0, 44, 118, 0.14) !important;
+                border-radius: 999px !important;
+                color: #0f172a !important;
+                background: #ffffff !important;
+            }
+            .search-option-btn:hover {
+                background: #eff4ff !important;
+                border-color: rgba(0, 44, 118, 0.22) !important;
+            }
+            .sources-search-btn {
+                border: 1px solid rgba(0, 44, 118, 0.16) !important;
+                color: #002C76 !important;
+                background: #ffffff !important;
+            }
+            .sources-search-btn:hover {
+                background: #eff4ff !important;
+                border-color: rgba(0, 44, 118, 0.28) !important;
+            }
+            .source-item {
+                border: 1px solid #e5edf7 !important;
+                border-radius: 22px !important;
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.92)) !important;
+            }
+            .source-item:hover {
+                border-color: rgba(0, 44, 118, 0.14) !important;
+                box-shadow: 0 18px 30px rgba(15, 23, 42, 0.06) !important;
+                transform: translateY(-1px);
+            }
+            .source-icon-container.pdf,
+            .source-icon-container.docx,
+            .source-icon-container.xlsx {
+                background: linear-gradient(135deg, rgba(0, 44, 118, 0.08), rgba(96, 165, 250, 0.16)) !important;
+                color: #002C76 !important;
+                border: 1px solid rgba(0, 44, 118, 0.10) !important;
+                border-radius: 16px !important;
+            }
+            .source-preview-btn {
+                border-radius: 999px !important;
+                border: 1px solid rgba(0, 44, 118, 0.12) !important;
+                color: #002C76 !important;
+                background: #ffffff !important;
+            }
+            .source-preview-btn:hover {
+                background: #eff4ff !important;
+                border-color: rgba(0, 44, 118, 0.22) !important;
+            }
+            .secure-section {
+                border-radius: 18px !important;
+                border: 1px dashed rgba(0, 44, 118, 0.16) !important;
+                background: linear-gradient(180deg, rgba(245, 248, 255, 0.95), rgba(255, 255, 255, 0.96)) !important;
+            }
+            .secure-icon-box {
+                border-radius: 12px !important;
+                background: linear-gradient(135deg, rgba(0, 44, 118, 0.12), rgba(96, 165, 250, 0.16)) !important;
+                color: #002C76 !important;
+            }
+            .chat-header-icon {
+                border-radius: 12px !important;
+                background: linear-gradient(135deg, rgba(0, 44, 118, 0.08), rgba(96, 165, 250, 0.18)) !important;
+                border: 1px solid rgba(0, 44, 118, 0.10) !important;
+                color: #002C76 !important;
+            }
+            .chat-subtitle {
+                color: #64748b !important;
+            }
+            #chat-scroll.panel-content {
+                background:
+                    radial-gradient(circle at 50% 16%, rgba(0, 44, 118, 0.03), transparent 24%),
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98)) !important;
+                position: relative;
+            }
+            #chat-scroll.panel-content::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                background-image: radial-gradient(rgba(0, 44, 118, 0.055) 1px, transparent 1px);
+                background-size: 18px 18px;
+                opacity: 0.35;
+                mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0));
+            }
+            .chat-thread {
+                position: relative;
+                z-index: 1;
+            }
+            .chat-welcome {
+                text-align: center;
+                padding: 84px 32px 56px !important;
+            }
+            .chat-welcome > div:first-child {
+                font-size: 44px !important;
+                margin-bottom: 20px !important;
+            }
+            .chat-welcome > div:last-child {
+                align-items: center !important;
+                margin: 0 auto !important;
+            }
+            .chat-welcome h3 {
+                color: #0f172a !important;
+            }
+            .chat-welcome p {
+                max-width: 760px;
+                margin-left: auto !important;
+                margin-right: auto !important;
+            }
+            .chat-welcome button {
+                border: 1px solid rgba(0, 44, 118, 0.14) !important;
+                border-radius: 999px !important;
+                color: #0f172a !important;
+                background: #ffffff !important;
+                box-shadow: 0 10px 20px rgba(15, 23, 42, 0.03);
+                align-self: center !important;
+                min-width: 280px;
+                justify-content: center;
+            }
+            .chat-welcome button:hover {
+                background: #eff4ff !important;
+                border-color: rgba(0, 44, 118, 0.22) !important;
+            }
+            .chat-input-area {
+                border-top: 1px solid #dbe4f0 !important;
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.98)) !important;
+            }
+            .chat-input-wrapper {
+                max-width: 920px !important;
+            }
+            .chat-composer {
+                border: 1px solid #dbe4f0 !important;
+                border-radius: 28px !important;
+                background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(251, 252, 255, 0.98)) !important;
+                box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06);
+            }
+            .chat-textarea {
+                border-radius: 26px !important;
+                border-color: transparent !important;
+                box-shadow: none !important;
+            }
+            .chat-composer:focus-within {
+                border-color: rgba(0, 44, 118, 0.34) !important;
+                box-shadow: 0 0 0 4px rgba(0, 44, 118, 0.10), 0 20px 50px rgba(15, 23, 42, 0.06) !important;
+            }
+            .chat-pill {
+                border: 1px solid rgba(0, 44, 118, 0.14) !important;
+                border-radius: 999px !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
+            }
+            .chat-pill:hover {
+                background: #eff4ff !important;
+                border-color: rgba(0, 44, 118, 0.22) !important;
+            }
+            .chat-icon-btn {
+                border: 1px solid rgba(0, 44, 118, 0.14) !important;
+                color: #002C76 !important;
+                background: #ffffff !important;
+            }
+            .chat-icon-btn:hover {
+                background: #eff4ff !important;
+                border-color: rgba(0, 44, 118, 0.22) !important;
+            }
+            .chat-send-btn {
+                background: linear-gradient(135deg, #002C76, #2f67d8) !important;
+                box-shadow: 0 12px 26px rgba(0, 44, 118, 0.22);
+            }
+            .chat-send-btn:hover:not(:disabled) {
+                transform: translateY(-1px);
+                box-shadow: 0 16px 32px rgba(0, 44, 118, 0.28);
+            }
         </style>
     </head>
-    <body>
+    <body class="notebook-detail-page">
         <div
+            class="notebook-shell"
             style="display: flex; flex-direction: column; height: 100dvh;"
             x-data="{
                 ...workspaceChat({
@@ -1468,14 +1776,14 @@
                 },
             }"
         >
-            <div style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;">
+            <div class="notebook-topbar" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 24px;">
-                    <a href="{{ route('notebooks.index') }}" style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: white; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='white'">
+                    <a href="{{ route('notebooks.index') }}" class="topbar-back-btn" style="display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: white; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.backgroundColor='#f1f5f9'" onmouseout="this.style.backgroundColor='white'">
                         <svg style="width: 24px; height: 24px; color: #475569;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
                     </a>
-                    <div style="width: 48px; height: 48px; background: #1e293b; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <div class="topbar-mark" style="width: 48px; height: 48px; background: #1e293b; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                         <svg style="width: 28px; height: 28px; color: white;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                         </svg>
@@ -1491,13 +1799,13 @@
                                    @keyup.escape="editingTitle = false; newTitle = @js($notebook->title)"
                                    style="font-family: 'Space Grotesk', sans-serif; font-size:28px; font-weight:700; color:#1e293b; border:none; border-bottom:2px solid #6366f1; outline:none; background:transparent; width:100%;">
                         </form>
-                        <h1 x-show="!editingTitle" x-cloak @click="editingTitle = true" style="font-family: 'Space Grotesk', sans-serif; font-size:28px; font-weight:700; color:#1e293b; margin:0; cursor:pointer; border-bottom:2px dashed transparent; transition:border-color 0.2s ease;" x-text="newTitle" onmouseover="this.style.borderColor='#cbd5e1'" onmouseout="this.style.borderColor='transparent'"></h1>
+                        <h1 x-show="!editingTitle" x-cloak @click="editingTitle = true" class="topbar-title" style="font-family: 'Space Grotesk', sans-serif; font-size:28px; font-weight:700; color:#1e293b; margin:0; cursor:pointer; border-bottom:2px dashed transparent; transition:border-color 0.2s ease;" x-text="newTitle" onmouseover="this.style.borderColor='#cbd5e1'" onmouseout="this.style.borderColor='transparent'"></h1>
                     </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 16px;">
                     <form method="POST" action="{{ route('notebooks.create.quick') }}">
                         @csrf
-                        <button type="submit" style="padding: 12px 28px; background: #1e293b; color: white; border-radius: 999px; font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <button type="submit" class="create-notebook-btn" style="padding: 12px 28px; background: #1e293b; color: white; border-radius: 999px; font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                             <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
@@ -1505,7 +1813,7 @@
                         </button>
                     </form>
                     
-                    <button @click="showShareModal = true" style="padding: 10px 20px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 999px; font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <button @click="showShareModal = true" class="share-notebook-btn" style="padding: 10px 20px; border: 1px solid #e2e8f0; background: white; color: #475569; border-radius: 999px; font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                         <svg style="width: 20px; height: 20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
                         </svg>
@@ -1513,7 +1821,7 @@
                     </button>
                     
                     <div x-data="{ userMenuOpen: false }" style="position: relative;">
-                        <button @click="userMenuOpen = !userMenuOpen" style="width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6, #a855f7); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700; cursor: pointer; border: none;">
+                        <button @click="userMenuOpen = !userMenuOpen" class="profile-chip" style="width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6, #a855f7); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 700; cursor: pointer; border: none;">
                             {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
                         </button>
                         <div x-show="userMenuOpen" @click.outside="userMenuOpen = false" x-cloak style="position: absolute; top: 50px; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); min-width: 200px; z-index: 100;">
@@ -2036,6 +2344,7 @@
                                                                     <a :href="source.url" target="_blank" rel="noopener noreferrer"
                                                                        style="color: #2563eb; text-decoration: underline; word-break: break-word; font-weight: 700;"
                                                                        x-text="source.page ? `${source.name} - Page ${source.page}` : source.name"></a>
+                                                                    <div x-text="source.url" style="margin-top: 3px; color: #64748b; font-size: 11px; line-height: 1.45; word-break: break-all;"></div>
                                                                     <template x-if="source.evidence_snippet">
                                                                         <div x-text="source.evidence_snippet" style="margin-top: 6px; color: #64748b; font-size: 11px; line-height: 1.45;"></div>
                                                                     </template>
@@ -2055,6 +2364,7 @@
                                                                     <a :href="source.url" target="_blank" rel="noopener noreferrer"
                                                                        style="color: #2563eb; text-decoration: underline; word-break: break-word; font-weight: 700;"
                                                                        x-text="source.page ? `${source.name} - Page ${source.page}` : source.name"></a>
+                                                                    <div x-text="source.url" style="margin-top: 3px; color: #64748b; font-size: 11px; line-height: 1.45; word-break: break-all;"></div>
                                                                     <template x-if="source.evidence_snippet">
                                                                         <div x-text="source.evidence_snippet" style="margin-top: 6px; color: #64748b; font-size: 11px; line-height: 1.45;"></div>
                                                                     </template>
@@ -2091,7 +2401,12 @@
                                                     <div style="font-weight: 700; margin-bottom: 4px;">Uploaded Sources Used:</div>
                                                     <div style="display: flex; flex-direction: column; gap: 2px;">
                                                         <template x-for="(name, index) in message.metadata.uploaded_source_names" :key="index">
-                                                            <div style="color: #475569; word-break: break-word;" x-text="`• ${name}`"></div>
+                                                            <div style="color: #475569; word-break: break-word;">
+                                                                <div x-text="`• ${name}`"></div>
+                                                                <template x-if="message.metadata.uploaded_source_links && message.metadata.uploaded_source_links[index] && message.metadata.uploaded_source_links[index].url">
+                                                                    <div x-text="message.metadata.uploaded_source_links[index].url" style="margin-top: 2px; color: #64748b; font-size: 11px; word-break: break-all;"></div>
+                                                                </template>
+                                                            </div>
                                                         </template>
                                                     </div>
                                                 </div>
@@ -2139,6 +2454,7 @@
                                                                         <div class="web-source-content">
                                                                             <div class="web-source-domain" x-text="source.domain"></div>
                                                                             <div class="web-source-title" x-text="source.title"></div>
+                                                                            <div class="web-source-url" x-text="source.url"></div>
                                                                         </div>
                                                                     </div>
                                                                 </a>
@@ -2158,6 +2474,7 @@
                                                                         <div class="web-source-content">
                                                                             <div class="web-source-domain" x-text="source.domain"></div>
                                                                             <div class="web-source-title" x-text="source.title"></div>
+                                                                            <div class="web-source-url" x-text="source.url"></div>
                                                                         </div>
                                                                     </div>
                                                                 </a>
