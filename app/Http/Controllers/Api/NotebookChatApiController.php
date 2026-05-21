@@ -46,7 +46,7 @@ class NotebookChatApiController extends Controller
             'selected_source_ids' => $selectedSourceIds,
         ]);
 
-        $contextPayload = $rag->buildContext($notebook, $prompt, 4, $selectedSourceIds ?: null);
+        $contextPayload = $rag->buildContext($notebook, $prompt, 4, $selectedSourceIds);
 
         Log::info('NotebookChatApiController: Context built', [
             'context_length' => strlen($contextPayload['context']),
@@ -62,7 +62,11 @@ class NotebookChatApiController extends Controller
 
         Log::info('NotebookChatApiController: Calling GeminiService for answer');
 
-        $answer = $gemini->answer($prompt, $contextPayload['context'], $contextPayload['citations'], $mode);
+        $retrievalNote = (int) ($contextPayload['sources_considered'] ?? 0) > 0 && trim($contextPayload['context']) === ''
+            ? 'Uploaded sources were searched, but no directly relevant context chunks were found for this question.'
+            : null;
+
+        $answer = $gemini->answer($prompt, $contextPayload['context'], $contextPayload['citations'], $mode, $retrievalNote);
 
         Log::info('NotebookChatApiController: Received final answer from AI', [
             'answer_text' => $answer['text'],
@@ -77,12 +81,15 @@ class NotebookChatApiController extends Controller
         $uploadedSourceLinks = $uploadedSources
             ->map(function ($source) use ($notebook) {
                 $sourceId = $source['source_id'] ?? null;
+                $page = $source['page_number'] ?? $source['page'] ?? null;
 
                 return [
                     'name' => $source['source_name'] ?? 'Uploaded source',
                     'url' => $sourceId
                         ? URL::route('notebooks.sources.show', [$notebook, $sourceId])
                         : ($source['source_url'] ?? null),
+                    'page' => $page,
+                    'evidence_snippet' => $source['text'] ?? $source['evidence_snippet'] ?? null,
                 ];
             })
             ->filter(fn ($source) => filled($source['url']))

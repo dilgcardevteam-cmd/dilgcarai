@@ -1228,7 +1228,7 @@
                     ])->values()),
                 }),
                 sourcesCollapsed: false,
-                selectedSourceIds: [],
+                selectedSourceIds: @js($sources->getCollection()->pluck('id')->values()),
                 pageSourceIds: @js($sources->getCollection()->pluck('id')->values()),
                 get selectAllChecked() {
                     if (!this.pageSourceIds.length) return false;
@@ -1715,7 +1715,7 @@
                         <svg class="w-4 h-4 footer-info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <span>Only selected sources will be used</span>
+                        <span>Selected sources improve answers when relevant</span>
                     </div>
 
                     @if ($sources->hasPages())
@@ -1758,7 +1758,7 @@
                         </div>
                         <div class="chat-title-wrap">
                             <p class="chat-title">Chat</p>
-                            <p class="chat-subtitle">Ask questions about your sources</p>
+                            <p class="chat-subtitle">Ask anything, draft content, or analyze selected sources</p>
                         </div>
                     </div>
                     <button class="text-gray-400 hover:text-gray-600" type="button" aria-label="Chat menu">
@@ -1814,7 +1814,7 @@
                                             <svg style="width: 20px; height: 20px; color: #3b82f6; animation: spin 1s linear infinite;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                             </svg>
-                                            <span x-text="chatLoadingState === 'thinking' ? 'Thinking...' : (chatLoadingState === 'loading' ? 'Loading...' : 'Searching for more information...')" style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; color: #1e293b;"></span>
+                                            <span x-text="chatLoadingState === 'thinking' ? 'Thinking...' : (chatLoadingState === 'loading' ? 'Checking useful source context...' : 'Writing a helpful answer...')" style="font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600; color: #1e293b;"></span>
                                         </div>
                                     </div>
                                 </template>
@@ -1839,15 +1839,15 @@
                                                 </svg>
                                                 
                                                 <template x-if="message.metadata.uploaded_sources_count > 0 && message.metadata.web_sources_count === 0">
-                                                    <span x-text="`Answer generated from ${message.metadata.uploaded_sources_count} uploaded sources`"></span>
+                                                    <span x-text="`Used ${message.metadata.uploaded_sources_count} uploaded source matches`"></span>
                                                 </template>
                                                 
                                                 <template x-if="message.metadata.web_sources_count > 0 && message.metadata.uploaded_sources_count === 0">
-                                                    <span x-text="`Answer generated from ${message.metadata.web_sources_count} web sources`"></span>
+                                                    <span x-text="`Used ${message.metadata.web_sources_count} web sources`"></span>
                                                 </template>
                                                 
                                                 <template x-if="message.metadata.uploaded_sources_count > 0 && message.metadata.web_sources_count > 0">
-                                                    <span>Answer generated from both web and uploaded sources</span>
+                                                    <span>Used web and uploaded source context</span>
                                                 </template>
                                             </template>
                                             
@@ -1859,7 +1859,10 @@
                                                             <div style="padding: 8px 12px; background: #f1f5f9; border-radius: 8px; border: 1px solid #e2e8f0;">
                                                                 <a :href="source.url" target="_blank" rel="noopener noreferrer"
                                                                    style="color: #2563eb; text-decoration: underline; word-break: break-word; font-weight: 700;"
-                                                                   x-text="source.name"></a>
+                                                                   x-text="source.page ? `${source.name} - Page ${source.page}` : source.name"></a>
+                                                                <template x-if="source.evidence_snippet">
+                                                                    <div x-text="source.evidence_snippet" style="margin-top: 6px; color: #64748b; font-size: 11px; line-height: 1.45;"></div>
+                                                                </template>
                                                             </div>
                                                         </template>
                                                     </div>
@@ -1898,7 +1901,7 @@
                                                         <svg style="width: 14px; height: 14px; flex: 0 0 auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                         </svg>
-                                                        <span>Answer generated from Web Sources</span>
+                                                        <span>Used web source context</span>
                                                     </div>
                                                     <div class="assistant-source-group">
                                                         <div class="assistant-source-title">Web Sources</div>
@@ -1986,7 +1989,7 @@
                                 </div>
 
                                 <div class="chat-tools-right">
-                                    <span class="source-count" x-text="`${selectedSourceIds.length || {{ $sourcesTotal }}} sources`"></span>
+                                    <span class="source-count" x-text="`${selectedSourceIds.length} sources`"></span>
                                     <button
                                         type="button"
                                         class="chat-send-btn"
@@ -2366,7 +2369,7 @@
                                      prompt: userPrompt,
                                      mode: this.mode,
                                      stream: true,
-                                     selected_source_ids: (this.selectedSourceIds && this.selectedSourceIds.length) ? this.selectedSourceIds : null,
+                                     selected_source_ids: this.selectedSourceIds ?? null,
                                  }),
                              });
 
@@ -2417,7 +2420,7 @@
                                  });
                              }
                          } catch (error) {
-                             assistantMessage.content = 'The AI response could not be completed right now. Please try again after the current source processing finishes or after verifying the OpenAI configuration.';
+                             assistantMessage.content = 'We could not complete the response right now. Please try again in a moment.';
                              this.messages = [...this.messages];
                          } finally {
                              this.isLoading = false;

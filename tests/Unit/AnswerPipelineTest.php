@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\GeminiService;
+use App\Services\NotebookRagService;
 use Tests\TestCase;
 
 class AnswerPipelineTest extends TestCase
@@ -50,5 +51,17 @@ class AnswerPipelineTest extends TestCase
         $this->assertStringNotContainsString('The uploaded document could not be processed', $result['text']);
         $this->assertStringNotContainsString('Answer based on indexed notebook content', $result['text']);
         $this->assertStringNotContainsString('PHP extensions like ZipArchive', $result['text']);
+    }
+
+    public function test_retrieval_keywords_ignore_weak_question_words(): void
+    {
+        $rag = app(NotebookRagService::class);
+        $reflection = new \ReflectionClass($rag);
+        $method = $reflection->getMethod('extractSearchKeywords');
+        $method->setAccessible(true);
+
+        $result = $method->invoke($rag, 'What is the main purpose of EduTrack?');
+
+        $this->assertEquals(['edutrack'], $result->all());
     }
 }

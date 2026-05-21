@@ -7,7 +7,9 @@ use App\Models\Notebook;
 use App\Models\Source;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Smalot\PdfParser\Parser;
 
 class NotebookRagService
 {
@@ -18,15 +20,14 @@ class NotebookRagService
      */
     public function syncSourceEmbeddings(Source $source): void
     {
-        $text = trim($source->extracted_text ?: ($source->summary ?: ''));
-
         $source->embeddings()->delete();
 
-        if ($text === '') {
+        $chunks = $this->chunkSource($source);
+
+        if ($chunks === []) {
             return;
         }
 
-        $chunks = $this->chunkText($text);
         $vectors = $this->gemini->embeddings(array_column($chunks, 'content'));
 
         foreach ($chunks as $index => $chunk) {
@@ -43,6 +44,8 @@ class NotebookRagService
                 'metadata' => [
                     'source_name' => $source->name,
                     'type' => $source->type,
+                    'page_number' => $chunk['page_number'],
+                    'evidence_snippet' => $this->citationSnippet($chunk['content']),
                 ],
             ]);
         }
@@ -62,11 +65,9 @@ class NotebookRagService
         ]);
 
         $selectedSources = $notebook->sources()
-            ->when(
-                is_array($sourceIds) && $sourceIds !== [],
-                fn ($query) => $query->whereIn('id', $sourceIds),
-                fn ($query) => $query->whereRaw('1 = 0')
-            )
+            ->when(is_array($sourceIds), fn ($query) => $sourceIds === []
+                ? $query->whereRaw('1 = 0')
+                : $query->whereIn('id', $sourceIds))
             ->latest('updated_at')
             ->get();
 
@@ -76,24 +77,47 @@ class NotebookRagService
                 'context' => '',
                 'citations' => [],
                 'chunks' => collect(),
+                'sources_considered' => 0,
             ];
         }
 
-        $context = $selectedSources
-            ->map(function (Source $source) {
-                $text = $source->extracted_text ?: $source->summary;
-                $truncated = Str::limit($text, 15000);
-                return "[{$source->name}]\n{$truncated}";
+        $chunks = $this->searchRelevantChunks($notebook, $prompt, $limit, $selectedSources->pluck('id')->all());
+
+        if ($chunks->isEmpty()) {
+            return [
+                'context' => '',
+                'citations' => [],
+                'chunks' => collect(),
+                'sources_considered' => $selectedSources->count(),
+            ];
+        }
+
+        $context = $chunks
+            ->map(function (AiEmbedding $chunk) {
+                $source = $chunk->source;
+                $page = (int) data_get($chunk->metadata, 'page_number', 1);
+
+                return "[Page {$page} | Source {$source?->name} | Chunk {$chunk->chunk_index}]\n{$chunk->content}";
             })
             ->implode("\n\n---\n\n");
 
-        $citations = $selectedSources
-            ->map(fn (Source $source) => [
-                'source_id' => $source->id,
-                'source_name' => $source->name,
-                'type' => $source->type,
-                'source_url' => $source->source_url,
+        $citations = $chunks
+            ->map(fn (AiEmbedding $chunk) => [
+                'ai_embedding_id' => $chunk->id,
+                'source_id' => $chunk->source?->id,
+                'source_name' => $chunk->source?->name ?? 'Uploaded source',
+                'type' => $chunk->source?->type,
+                'source_url' => $chunk->source?->source_url,
+                'page' => (int) data_get($chunk->metadata, 'page_number', 1),
+                'page_number' => (int) data_get($chunk->metadata, 'page_number', 1),
+                'chunk_id' => (string) $chunk->chunk_index,
+                'chunk_index' => $chunk->chunk_index,
+                'evidence_snippet' => $this->citationSnippet($chunk->content),
+                'text' => $this->citationSnippet($chunk->content),
+                'score' => $chunk->getAttribute('relevance_score'),
             ])
+            ->unique(fn (array $citation) => ($citation['source_id'] ?? '').':'.($citation['chunk_index'] ?? ''))
+            ->values()
             ->all();
 
         Log::info('Generated RAG context preview', [
@@ -104,7 +128,8 @@ class NotebookRagService
         return [
             'context' => $context,
             'citations' => $citations,
-            'chunks' => collect(),
+            'chunks' => $chunks,
+            'sources_considered' => $selectedSources->count(),
         ];
     }
 
@@ -115,10 +140,11 @@ class NotebookRagService
      */
     public function searchRelevantChunks(Notebook $notebook, string $prompt, int $limit = 4, ?array $sourceIds = null): Collection
     {
-        $keywords = collect(Str::of($prompt)->lower()->replaceMatches('/[^a-z0-9\s]/', ' ')->explode(' '))
-            ->filter(fn (string $part) => Str::length($part) > 2)
-            ->unique()
-            ->values();
+        $keywords = $this->extractSearchKeywords($prompt);
+
+        if ($keywords->isEmpty()) {
+            return collect();
+        }
 
         return $notebook->embeddings()
             ->with('source')
@@ -130,13 +156,33 @@ class NotebookRagService
             ->map(function (AiEmbedding $chunk) use ($keywords): AiEmbedding {
                 $haystack = Str::lower($chunk->content);
                 $score = $keywords->sum(fn (string $keyword) => substr_count($haystack, $keyword));
+                $matchedTerms = $keywords->filter(fn (string $keyword) => str_contains($haystack, $keyword))->count();
                 $chunk->setAttribute('relevance_score', $score);
+                $chunk->setAttribute('matched_terms', $matchedTerms);
 
                 return $chunk;
             })
-            ->filter(fn (AiEmbedding $chunk) => ($chunk->getAttribute('relevance_score') ?? 0) > 0)
+            ->filter(fn (AiEmbedding $chunk) => ($chunk->getAttribute('relevance_score') ?? 0) > 0 && ($chunk->getAttribute('matched_terms') ?? 0) > 0)
             ->sortByDesc(fn (AiEmbedding $chunk) => $chunk->getAttribute('relevance_score'))
             ->take($limit)
+            ->values();
+    }
+
+    protected function extractSearchKeywords(string $prompt): Collection
+    {
+        $stopWords = [
+            'about', 'also', 'answer', 'based', 'briefly', 'could', 'does', 'explain',
+            'from', 'give', 'how', 'information', 'main', 'meaning', 'mention',
+            'overview', 'purpose', 'question', 'show', 'source', 'sources', 'state',
+            'tell', 'that', 'their', 'there', 'these', 'this', 'what', 'when',
+            'where', 'which', 'while', 'with', 'would', 'the', 'and', 'for', 'are',
+            'was', 'were', 'has', 'have', 'had', 'into', 'its', 'why', 'who',
+        ];
+
+        return collect(Str::of($prompt)->lower()->replaceMatches('/[^a-z0-9\s]/', ' ')->explode(' '))
+            ->map(fn (string $part) => trim($part))
+            ->filter(fn (string $part) => Str::length($part) > 2 && ! in_array($part, $stopWords, true))
+            ->unique()
             ->values();
     }
 
@@ -160,9 +206,56 @@ class NotebookRagService
             $chunks[] = [
                 'content' => $content,
                 'token_count' => (int) ceil(str_word_count($content) * 1.35),
+                'page_number' => 1,
             ];
         }
 
         return $chunks;
+    }
+
+    /**
+     * @return array<int, array{content:string,token_count:int,page_number:int}>
+     */
+    protected function chunkSource(Source $source): array
+    {
+        if ($source->type !== 'pdf') {
+            return $this->chunkText(trim($source->extracted_text ?: ($source->summary ?: '')));
+        }
+
+        $path = $source->storage_path ? Storage::disk($source->storage_disk)->path($source->storage_path) : null;
+
+        if (! $path || ! is_file($path)) {
+            return $this->chunkText(trim($source->extracted_text ?: ($source->summary ?: '')));
+        }
+
+        try {
+            $pdf = (new Parser())->parseFile($path);
+            $chunks = [];
+
+            foreach ($pdf->getPages() as $index => $page) {
+                $pageNumber = $index + 1;
+
+                foreach ($this->chunkText($page->getText()) as $chunk) {
+                    $chunk['page_number'] = $pageNumber;
+                    $chunks[] = $chunk;
+                }
+            }
+
+            return $chunks;
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to build page-aware PDF chunks', [
+                'source_id' => $source->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return $this->chunkText(trim($source->extracted_text ?: ($source->summary ?: '')));
+        }
+    }
+
+    protected function citationSnippet(string $text): string
+    {
+        $normalized = preg_replace('/\s+/', ' ', trim($text)) ?? trim($text);
+
+        return Str::limit($normalized, 280);
     }
 }

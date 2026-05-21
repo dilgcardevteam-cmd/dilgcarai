@@ -22,7 +22,7 @@ class GeminiService
      *
      * @return array{text:string,citations:array<int, array<string, mixed>>,provider:string,used_sources:bool}
      */
-    public function answer(string $prompt, string $context, array $citations = [], string $mode = 'qa'): array
+    public function answer(string $prompt, string $context, array $citations = [], string $mode = 'qa', ?string $retrievalNote = null): array
     {
         Log::info('GeminiService: Generating answer', [
             'prompt' => $prompt,
@@ -53,6 +53,10 @@ class GeminiService
                 $apiKey = config('services.gemini.api_key');
                 $model = config('services.gemini.grounded_model', 'gemini-2.5-flash');
                 
+                $retrievalInstruction = filled($retrievalNote)
+                    ? "\nRETRIEVAL NOTE:\n{$retrievalNote}\nIf useful, briefly mention that you could not find a direct reference in the uploaded source, then answer normally using general knowledge."
+                    : '';
+
                 $systemPrompt = <<<PROMPT
 You are NoteGov AI, a general-purpose AI assistant with deep knowledge across many fields.
 - Respond conversationally and naturally to the user's message
@@ -61,8 +65,9 @@ You are NoteGov AI, a general-purpose AI assistant with deep knowledge across ma
 - Keep responses friendly, helpful, comprehensive, and professional
 - Follow all safety and ethical guidelines while answering legitimate questions
 - Provide accurate, appropriate, and useful information in every response
-- Never mention document processing failures or technical issues
+- Never refuse only because uploaded sources do not contain the answer
 - Focus on what the user is asking
+{$retrievalInstruction}
 
 USER MESSAGE:
 {$prompt}
@@ -135,41 +140,42 @@ PROMPT;
             $model = config('services.gemini.chat_model', 'gemini-flash-latest');
             
             $systemPrompt = <<<PROMPT
-You are NoteGov AI, a strict document-based AI assistant for Philippine government and legal document analysis.
+You are NoteGov AI, a modern hybrid RAG + general AI assistant.
 
-CORE BEHAVIOR:
-* Always analyze the uploaded document automatically.
-* Assume the uploaded file is the primary and only source of truth.
-* Never rely on general legal knowledge when answering document-based questions.
+Your job is to help the user intelligently while using uploaded source chunks as optional supporting evidence.
 
-STRICT RULES:
-1. Answer ONLY using information directly found in the uploaded document.
-2. Do NOT add assumptions, outside legal knowledge, inferred interpretations, or fabricated details.
-3. If a fact is not visible in the document, say: "The information is not stated in the provided document."
-4. Prefer exact wording or close paraphrasing from the document.
-5. Never mention laws, sections, procedures, or fund sources unless explicitly written in the document.
-6. Avoid phrases like: "Based on general legal knowledge...", "Typically...", "Usually...", "Under Philippine law..."
-7. Maintain concise, accurate, document-faithful answers.
-8. Do NOT repeat raw extracted text, file preview, metadata, or document headers unless specifically asked.
+RESPONSE PRIORITIES:
+1. Helpful response
+2. Source grounding when relevant context exists
+3. Natural conversation
+4. Retrieval augmentation
+5. General AI fallback intelligence
+
+RULES:
+1. Use the retrieved source chunks when they directly help answer the question.
+2. Do not invent facts and present them as being from the uploaded source.
+3. If the retrieved chunks do not fully answer the question, do NOT refuse. Answer using general knowledge and clearly separate it from source-backed information.
+4. Never use a bare document-not-found refusal as the whole answer.
+5. You may say: "I could not find this specifically in the uploaded source, but based on general knowledge..."
+6. Include page/snippet citations only for claims supported by retrieved chunks.
+7. If no citation supports a claim, do not attach a source citation to that claim.
+8. Use professional, concise, intelligent wording.
 9. Do NOT include phrases like "Answer based on indexed notebook content".
-10. DO NOT include, reference, or focus on any information related to "AGRA AMICUS" in any response.
-11. Ensure ALL answers are completely accurate, correct, and well-founded with the highest level of accuracy.
+10. Return valid JSON only. No markdown fences.
 
-OUTPUT STYLE:
-* Direct
-* Formal
-* Accurate
-* Source-based
-* No hallucinations
-* No extra explanations unless requested
-
-Priority order:
-1. Uploaded document text
-2. User question
-3. Nothing else
+OUTPUT FORMAT:
+{
+  "answer": "string",
+  "citations": [
+    {
+      "page": 27,
+      "text": "matched text snippet"
+    }
+  ]
+}
 
 DOCUMENT CONTEXT:
-{$context}
+{$trimmedContext}
 
 QUESTION:
 {$prompt}
@@ -221,9 +227,10 @@ PROMPT;
             }
 
             $responseJson = $response->json();
-            $text = $this->extractResponseText($responseJson);
-
-            $finalAnswer = $text ?: $this->fallbackAnswer($prompt, $context, $mode);
+            $text = $this->extractResponseText($responseJson) ?: '';
+            $structured = $this->extractStructuredAnswer($text);
+            $answerCitations = $this->mergeCitationMetadata($structured['citations'], $citations);
+            $finalAnswer = $structured['answer'] ?: ($text ?: $this->fallbackAnswer($prompt, $trimmedContext, $mode));
 
             Log::info('GeminiService: Final formatted response ready', [
                 'final_answer_text' => $finalAnswer,
@@ -231,9 +238,9 @@ PROMPT;
 
             return [
                 'text' => $finalAnswer,
-                'citations' => $citations,
+                'citations' => $answerCitations,
                 'provider' => 'gemini',
-                'used_sources' => true,
+                'used_sources' => $answerCitations !== [],
             ];
         } catch (Throwable $exception) {
             Log::error('GeminiService: API error', [
@@ -391,6 +398,65 @@ PROMPT;
             })
             ->filter()
             ->unique('source_url')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{answer:string,citations:array<int,array<string,mixed>>}
+     */
+    protected function extractStructuredAnswer(string $text): array
+    {
+        $decoded = json_decode(trim($text), true);
+
+        if (! is_array($decoded)) {
+            preg_match('/\{.*\}/s', $text, $matches);
+            $decoded = isset($matches[0]) ? json_decode($matches[0], true) : null;
+        }
+
+        if (! is_array($decoded)) {
+            return ['answer' => trim($text), 'citations' => []];
+        }
+
+        return [
+            'answer' => trim((string) ($decoded['answer'] ?? '')),
+            'citations' => is_array($decoded['citations'] ?? null) ? $decoded['citations'] : [],
+        ];
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $modelCitations
+     * @param array<int,array<string,mixed>> $availableCitations
+     * @return array<int,array<string,mixed>>
+     */
+    protected function mergeCitationMetadata(array $modelCitations, array $availableCitations): array
+    {
+        if ($modelCitations === []) {
+            return [];
+        }
+
+        return collect($modelCitations)
+            ->map(function (array $citation) use ($availableCitations): array {
+                $page = (int) ($citation['page'] ?? $citation['page_number'] ?? 1);
+                $text = trim((string) ($citation['text'] ?? ''));
+                $source = collect($availableCitations)->first(function (array $available) use ($page, $text): bool {
+                    if ((int) ($available['page'] ?? $available['page_number'] ?? 1) !== $page) {
+                        return false;
+                    }
+
+                    $availableText = (string) ($available['text'] ?? $available['evidence_snippet'] ?? '');
+
+                    return $text === '' || str_contains($availableText, $text) || str_contains($text, $availableText);
+                }) ?? collect($availableCitations)->first(fn (array $available) => (int) ($available['page'] ?? $available['page_number'] ?? 1) === $page) ?? [];
+
+                return array_filter(array_merge($source, [
+                    'page' => $page,
+                    'page_number' => $page,
+                    'text' => $text ?: ($source['text'] ?? $source['evidence_snippet'] ?? null),
+                    'evidence_snippet' => $text ?: ($source['evidence_snippet'] ?? $source['text'] ?? null),
+                ]), fn ($value) => $value !== null && $value !== '');
+            })
+            ->filter(fn (array $citation) => filled($citation['text'] ?? null))
             ->values()
             ->all();
     }
