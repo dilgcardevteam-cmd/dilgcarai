@@ -487,6 +487,6 @@ PROMPT;
             return $this->friendlyFallbackAnswer($prompt);
         }
 
-        return "Based on the uploaded sources, here is the relevant information:\n\n" . $context;
+        return "NoteGov AI is currently unavailable. Please try again later.";
     }
 }
