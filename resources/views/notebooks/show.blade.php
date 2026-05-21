@@ -1052,7 +1052,164 @@
                 border: 1px solid #e2e8f0;
                 color: #475569;
                 word-break: break-word;
+                opacity: 0;
+                transform: translateY(8px);
+                transition: all 350ms cubic-bezier(0.4, 0, 0.2, 1);
             }
+
+            .assistant-source-item.visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            .references-container {
+                overflow: hidden;
+                max-height: 0;
+                transition: max-height 400ms cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .references-container.expanded {
+                max-height: 2000px;
+            }
+
+            .show-more-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                margin-top: 8px;
+                border: 1px solid #e2e8f0;
+                background: white;
+                color: #475569;
+                border-radius: 999px;
+                font-size: 12px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: all 200ms ease-in-out;
+            }
+
+            .show-more-btn:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+                color: #1e293b;
+            }
+
+            .show-more-btn svg {
+                transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .show-more-btn.expanded svg {
+                transform: rotate(180deg);
+            }
+
+            /* Web Sources Styles */
+            .web-sources-container {
+                overflow: hidden;
+                max-height: 0;
+                transition: max-height 350ms cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .web-sources-container.expanded {
+                max-height: 1000px;
+            }
+
+            .web-source-card {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 8px 10px;
+                background: white;
+                border-radius: 12px;
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+                transition: all 200ms ease-in-out;
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            .web-source-card.visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            .web-source-card:hover {
+                border-color: #cbd5e1;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+                transform: translateY(-1px);
+            }
+
+            .web-source-favicon {
+                width: 28px;
+                height: 28px;
+                border-radius: 8px;
+                background: #f1f5f9;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                font-size: 12px;
+                font-weight: 700;
+                color: #475569;
+                border: 1px solid #e2e8f0;
+            }
+
+            .web-source-content {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .web-source-domain {
+                font-size: 11px;
+                font-weight: 700;
+                color: #64748b;
+                margin-bottom: 2px;
+                text-transform: lowercase;
+            }
+
+            .web-source-title {
+                font-size: 12px;
+                font-weight: 600;
+                color: #1e293b;
+                line-height: 1.4;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .web-source-link {
+                text-decoration: none;
+            }
+
+            .web-sources-show-more-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                margin-top: 6px;
+                border: 1px solid #e2e8f0;
+                background: white;
+                color: #475569;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 700;
+                cursor: pointer;
+                transition: all 200ms ease-in-out;
+            }
+
+            .web-sources-show-more-btn:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+                color: #1e293b;
+            }
+
+            .web-sources-show-more-btn svg {
+                transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .web-sources-show-more-btn.expanded svg {
+                transform: rotate(180deg);
+            }
+
             .assistant-source-link {
                 color: #2563eb;
                 text-decoration: underline;
@@ -1853,20 +2010,79 @@
                                             </template>
                                             
                                             <template x-if="message.metadata && message.metadata.uploaded_source_links && message.metadata.uploaded_source_links.length > 0">
-                                                <div style="margin-top: 8px; font-size: 12px;">
+                                                <div x-data="{ 
+                                                    showAll: false, 
+                                                    visibleCount: 3,
+                                                    sources: message.metadata.uploaded_source_links,
+                                                    get shouldShowButton() { return this.sources.length > this.visibleCount; },
+                                                    get visibleSources() { 
+                                                        return this.showAll ? this.sources : this.sources.slice(0, this.visibleCount); 
+                                                    },
+                                                    get hiddenSources() { 
+                                                        return this.showAll ? [] : this.sources.slice(this.visibleCount); 
+                                                    }
+                                                }" style="margin-top: 8px; font-size: 12px;">
                                                     <div style="font-weight: 700; margin-bottom: 4px;">Uploaded Sources Used:</div>
-                                                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                                                        <template x-for="(source, index) in message.metadata.uploaded_source_links" :key="index">
-                                                            <div style="padding: 8px 12px; background: #f1f5f9; border-radius: 8px; border: 1px solid #e2e8f0;">
-                                                                <a :href="source.url" target="_blank" rel="noopener noreferrer"
-                                                                   style="color: #2563eb; text-decoration: underline; word-break: break-word; font-weight: 700;"
-                                                                   x-text="source.page ? `${source.name} - Page ${source.page}` : source.name"></a>
-                                                                <template x-if="source.evidence_snippet">
-                                                                    <div x-text="source.evidence_snippet" style="margin-top: 6px; color: #64748b; font-size: 11px; line-height: 1.45;"></div>
-                                                                </template>
-                                                            </div>
-                                                        </template>
+                                                    <div class="references-container" :class="{ 'expanded': showAll }">
+                                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                                            <template x-for="(source, index) in visibleSources" :key="index">
+                                                                <div class="assistant-source-item" 
+                                                                     :class="{ 'visible': true }"
+                                                                     x-init="$nextTick(() => { 
+                                                                         setTimeout(() => { 
+                                                                             $el.classList.add('visible'); 
+                                                                         }, index * 50); 
+                                                                     })">
+                                                                    <a :href="source.url" target="_blank" rel="noopener noreferrer"
+                                                                       style="color: #2563eb; text-decoration: underline; word-break: break-word; font-weight: 700;"
+                                                                       x-text="source.page ? `${source.name} - Page ${source.page}` : source.name"></a>
+                                                                    <template x-if="source.evidence_snippet">
+                                                                        <div x-text="source.evidence_snippet" style="margin-top: 6px; color: #64748b; font-size: 11px; line-height: 1.45;"></div>
+                                                                    </template>
+                                                                </div>
+                                                            </template>
+                                                            <template x-for="(source, index) in hiddenSources" :key="'hidden-' + index">
+                                                                <div class="assistant-source-item" 
+                                                                     x-show="showAll"
+                                                                     x-init="if (showAll) { 
+                                                                         $nextTick(() => { 
+                                                                             setTimeout(() => { 
+                                                                                 $el.classList.add('visible'); 
+                                                                             }, (visibleCount + index) * 50); 
+                                                                         }); 
+                                                                     }"
+                                                                     x-transition>
+                                                                    <a :href="source.url" target="_blank" rel="noopener noreferrer"
+                                                                       style="color: #2563eb; text-decoration: underline; word-break: break-word; font-weight: 700;"
+                                                                       x-text="source.page ? `${source.name} - Page ${source.page}` : source.name"></a>
+                                                                    <template x-if="source.evidence_snippet">
+                                                                        <div x-text="source.evidence_snippet" style="margin-top: 6px; color: #64748b; font-size: 11px; line-height: 1.45;"></div>
+                                                                    </template>
+                                                                </div>
+                                                            </template>
+                                                        </div>
                                                     </div>
+                                                    <template x-if="shouldShowButton">
+                                                        <button type="button" 
+                                                                class="show-more-btn" 
+                                                                :class="{ 'expanded': showAll }"
+                                                                @click="
+                                                                    showAll = !showAll; 
+                                                                    if (showAll) {
+                                                                        $nextTick(() => {
+                                                                            const items = $el.parentElement.querySelectorAll('.assistant-source-item');
+                                                                            items.forEach((el, idx) => {
+                                                                                setTimeout(() => { el.classList.add('visible'); }, idx * 50);
+                                                                            });
+                                                                        });
+                                                                    }
+                                                                ">
+                                                            <span x-text="showAll ? 'Show Less' : `Show ${sources.length - visibleCount} More`"></span>
+                                                            <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </template>
                                                 </div>
                                             </template>
 
@@ -1881,18 +2097,94 @@
                                                 </div>
                                             </template>
                                             
-                                            <template x-if="message.metadata && message.metadata.web_source_urls && message.metadata.web_source_urls.length > 0">
-                                                <div style="margin-top: 8px; font-size: 12px;">
+                                            <template x-if="message.metadata && (message.metadata.web_source_links && message.metadata.web_source_links.length > 0) || (message.metadata.web_source_urls && message.metadata.web_source_urls.length > 0)">
+                                                <div x-data="{ 
+                                                    showAll: false, 
+                                                    visibleCount: 3,
+                                                    get sources() { 
+                                                        if (this.$data.message.metadata.web_source_links && this.$data.message.metadata.web_source_links.length > 0) {
+                                                            return this.$data.message.metadata.web_source_links; 
+                                                        }
+                                                        return this.$data.message.metadata.web_source_urls.map(url => {
+                                                            let domain = 'web';
+                                                            try {
+                                                                domain = (new URL(url)).hostname;
+                                                            } catch (e) {
+                                                                domain = 'web';
+                                                            }
+                                                            return { url: url, title: domain, domain: domain };
+                                                        });
+                                                    },
+                                                    get shouldShowButton() { return this.sources.length > this.visibleCount; },
+                                                    get visibleSources() { 
+                                                        return this.showAll ? this.sources : this.sources.slice(0, this.visibleCount); 
+                                                    },
+                                                    get hiddenSources() { 
+                                                        return this.showAll ? [] : this.sources.slice(this.visibleCount); 
+                                                    }
+                                                }" style="margin-top: 8px; font-size: 12px;">
                                                     <div style="font-weight: 700; margin-bottom: 4px;">Web Sources Used:</div>
-                                                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                                                        <template x-for="(url, index) in message.metadata.web_source_urls" :key="index">
-                                                            <div style="padding: 8px 12px; background: #f1f5f9; border-radius: 8px; border: 1px solid #e2e8f0;">
-                                                                <a :href="url" target="_blank" rel="noopener noreferrer" 
-                                                                   style="color: #2563eb; text-decoration: underline; word-break: break-all; font-family: monospace;"
-                                                                   x-text="`\`${url}\``"></a>
-                                                            </div>
-                                                        </template>
+                                                    <div class="web-sources-container" :class="{ 'expanded': showAll }">
+                                                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                                                            <template x-for="(source, index) in visibleSources" :key="index">
+                                                                <a :href="source.url" target="_blank" rel="noopener noreferrer" class="web-source-link">
+                                                                    <div class="web-source-card" 
+                                                                         :class="{ 'visible': true }"
+                                                                         x-init="$nextTick(() => { 
+                                                                             setTimeout(() => { 
+                                                                                 $el.classList.add('visible'); 
+                                                                             }, index * 40); 
+                                                                         })">
+                                                                        <div class="web-source-favicon" x-text="source.domain.charAt(0).toUpperCase()"></div>
+                                                                        <div class="web-source-content">
+                                                                            <div class="web-source-domain" x-text="source.domain"></div>
+                                                                            <div class="web-source-title" x-text="source.title"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </a>
+                                                            </template>
+                                                            <template x-for="(source, index) in hiddenSources" :key="'hidden-' + index">
+                                                                <a :href="source.url" target="_blank" rel="noopener noreferrer" class="web-source-link">
+                                                                    <div class="web-source-card" 
+                                                                         x-show="showAll"
+                                                                         x-init="if (showAll) { 
+                                                                             $nextTick(() => { 
+                                                                                 setTimeout(() => { 
+                                                                                     $el.classList.add('visible'); 
+                                                                                 }, (visibleCount + index) * 40); 
+                                                                             }); 
+                                                                         }">
+                                                                        <div class="web-source-favicon" x-text="source.domain.charAt(0).toUpperCase()"></div>
+                                                                        <div class="web-source-content">
+                                                                            <div class="web-source-domain" x-text="source.domain"></div>
+                                                                            <div class="web-source-title" x-text="source.title"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </a>
+                                                            </template>
+                                                        </div>
                                                     </div>
+                                                    <template x-if="shouldShowButton">
+                                                        <button type="button" 
+                                                                class="web-sources-show-more-btn" 
+                                                                :class="{ 'expanded': showAll }"
+                                                                @click="
+                                                                    showAll = !showAll; 
+                                                                    if (showAll) {
+                                                                        $nextTick(() => {
+                                                                            const items = $el.parentElement.querySelectorAll('.web-source-card');
+                                                                            items.forEach((el, idx) => {
+                                                                                setTimeout(() => { el.classList.add('visible'); }, idx * 40);
+                                                                            });
+                                                                        });
+                                                                    }
+                                                                ">
+                                                            <span x-text="showAll ? 'Show Less' : `Show ${sources.length - visibleCount} More`"></span>
+                                                            <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                            </svg>
+                                                        </button>
+                                                    </template>
                                                 </div>
                                             </template>
 
