@@ -77,6 +77,20 @@ class NotebookChatApiController extends Controller
         $uploadedSources = $answerCitations->filter(fn ($c) => !in_array($c['type'] ?? '', ['web', 'url', 'youtube']))->values();
         $webSources = $answerCitations->filter(fn ($c) => in_array($c['type'] ?? '', ['web', 'url', 'youtube']))->values();
         $webSourceUrls = $webSources->pluck('source_url')->filter()->values()->all();
+        $webSourceLinks = $webSources
+            ->map(function ($source) {
+                $url = $source['source_url'] ?? null;
+                $title = $source['source_name'] ?? 'Web source';
+                $domain = parse_url((string) $url, PHP_URL_HOST) ?? 'web';
+                return [
+                    'url' => $url,
+                    'title' => $title,
+                    'domain' => $domain,
+                ];
+            })
+            ->filter(fn ($source) => filled($source['url']))
+            ->values()
+            ->all();
         $uploadedSourceNames = $uploadedSources->pluck('source_name')->values()->all();
         $uploadedSourceLinks = $uploadedSources
             ->map(function ($source) use ($notebook) {
@@ -109,6 +123,7 @@ class NotebookChatApiController extends Controller
                 'uploaded_source_links' => $uploadedSourceLinks,
                 'web_sources_count' => $webSources->count(),
                 'web_source_urls' => $webSourceUrls,
+                'web_source_links' => $webSourceLinks,
             ],
         ]);
 
