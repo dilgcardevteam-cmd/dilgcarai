@@ -2285,7 +2285,7 @@
                                     </div>
                                 </template>
 
-                                <p class="chat-content" x-text="message.content"></p>
+                                <p class="chat-content" x-html="renderContentWithCitations(message.content, message.citations || [])"></p>
 
                                 <template x-if="message.role === 'user'">
                                     <div class="chat-meta">
@@ -2926,6 +2926,84 @@
             </div>
         </div>
 
+        <style>
+            .citation-link {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 20px;
+                height: 20px;
+                padding: 0 6px;
+                font-size: 12px;
+                font-weight: 800;
+                color: #2563eb;
+                background: rgba(37, 99, 235, 0.08);
+                border-radius: 999px;
+                text-decoration: none;
+                cursor: pointer;
+                transition: all 0.15s ease;
+                position: relative;
+                z-index: 10;
+            }
+            .citation-link:hover {
+                background: rgba(37, 99, 235, 0.15);
+                color: #1d4ed8;
+                transform: translateY(-1px);
+            }
+            .citation-preview {
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                margin-bottom: 8px;
+                width: 320px;
+                padding: 14px 16px;
+                background: white;
+                border-radius: 16px;
+                box-shadow: 0 10px 40px rgba(15, 23, 42, 0.15);
+                border: 1px solid #e2e8f0;
+                z-index: 1000;
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.2s ease;
+                pointer-events: none;
+            }
+            .citation-link:hover .citation-preview {
+                opacity: 1;
+                visibility: visible;
+                pointer-events: auto;
+            }
+            .citation-preview-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 8px;
+            }
+            .citation-preview-filename {
+                font-size: 13px;
+                font-weight: 800;
+                color: #0f172a;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 220px;
+            }
+            .citation-preview-page {
+                font-size: 12px;
+                font-weight: 700;
+                color: #64748b;
+                background: #f1f5f9;
+                padding: 2px 8px;
+                border-radius: 999px;
+            }
+            .citation-preview-snippet {
+                font-size: 12px;
+                color: #475569;
+                line-height: 1.5;
+                max-height: 80px;
+                overflow: hidden;
+            }
+        </style>
         <script>
             function workspaceChat(config) {
                 return {
@@ -2936,6 +3014,45 @@
                     suggestions: config.suggestions || [],
                     prompt: '',
                     isLoading: false,
+                    renderContentWithCitations(content, citations) {
+                        if (!content) return '';
+                        let html = this.escapeHtml(content);
+                        
+                        html = html.replace(/\[(\d+)\]/g, (match, num) => {
+                            const index = parseInt(num) - 1;
+                            const citation = citations && citations[index] ? citations[index] : null;
+                            
+                            if (!citation) {
+                                return `<span class="text-gray-500 text-sm">[${num}]</span>`;
+                            }
+                            
+                            const filename = citation.source_name || 'Uploaded source';
+                            const page = citation.page_number || citation.page || 1;
+                            const snippet = citation.evidence_snippet || citation.text || '';
+                            const sourceId = citation.source_id;
+                            const viewerUrl = sourceId ? `/viewer/${sourceId}?page=${page}` : '#';
+                            
+                            return `
+                                <a href="${viewerUrl}" target="_blank" class="citation-link" onclick="event.preventDefault(); window.open('${viewerUrl}', '_blank'); return false;">
+                                    [${num}]
+                                    <div class="citation-preview">
+                                        <div class="citation-preview-header">
+                                            <span class="citation-preview-filename">${this.escapeHtml(filename)}</span>
+                                            <span class="citation-preview-page">Page ${page}</span>
+                                        </div>
+                                        <div class="citation-preview-snippet">${this.escapeHtml(snippet)}</div>
+                                    </div>
+                                </a>
+                            `;
+                        });
+                        
+                        return html;
+                    },
+                    escapeHtml(text) {
+                        const div = document.createElement('div');
+                        div.textContent = text;
+                        return div.innerHTML;
+                    },
                      async sendPrompt() {
                          const userPrompt = this.prompt.trim();
                          if (! userPrompt || this.isLoading) return;

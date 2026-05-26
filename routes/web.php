@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminAnalyticsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotebookChatController;
 use App\Http\Controllers\NotebookController;
+use App\Http\Controllers\PdfViewerController;
 use App\Http\Controllers\SourceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SystemSettingsController;
@@ -38,6 +39,9 @@ Route::middleware(['auth'])->group(function () {
         ->name('notebooks.sources.update');
     Route::delete('/notebooks/{notebook}/sources/{source}', [SourceController::class, 'destroy'])
         ->name('notebooks.sources.destroy');
+
+    Route::get('/viewer/{source}', [PdfViewerController::class, 'show'])->name('pdf.viewer');
+    Route::get('/viewer/{source}/stream', [PdfViewerController::class, 'stream'])->name('pdf.stream');
 
     Route::get('/notebooks/{notebook}/chats/{chat}/export', [NotebookChatController::class, 'export'])
         ->name('notebooks.chats.export');

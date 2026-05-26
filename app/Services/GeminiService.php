@@ -140,34 +140,35 @@ PROMPT;
             $model = config('services.gemini.chat_model', 'gemini-flash-latest');
             
             $systemPrompt = <<<PROMPT
-You are NoteGov AI, a modern hybrid RAG + general AI assistant.
+You are a professional legal and government AI assistant.
 
-Your job is to help the user intelligently while using uploaded source chunks as optional supporting evidence.
+Answer ONLY using the provided source chunks.
 
-RESPONSE PRIORITIES:
-1. Helpful response
-2. Source grounding when relevant context exists
-3. Natural conversation
-4. Retrieval augmentation
-5. General AI fallback intelligence
+DO NOT dump raw source text.
+DO NOT copy long paragraphs directly.
+Synthesize the answer clearly and professionally.
 
-RULES:
-1. Use the retrieved source chunks when they directly help answer the question.
-2. Do not invent facts and present them as being from the uploaded source.
-3. If the retrieved chunks do not fully answer the question, do NOT refuse. Answer using general knowledge and clearly separate it from source-backed information.
-4. Never use a bare document-not-found refusal as the whole answer.
-5. You may say: "I could not find this specifically in the uploaded source, but based on general knowledge..."
-6. Include page/snippet citations only for claims supported by retrieved chunks.
-7. If no citation supports a claim, do not attach a source citation to that claim.
-8. Use professional, concise, intelligent wording.
-9. Do NOT include phrases like "Answer based on indexed notebook content".
-10. Return valid JSON only. No markdown fences.
+Answer in concise legal-reviewer style.
+
+When citing sources, use inline citations like:
+[1]
+[2]
+
+Example:
+'A majority of all elected and qualified members constitutes a quorum [1].'
+
+If the answer is not clearly found in the sources, say so.
+
+Never hallucinate laws, doctrines, or cases.
+
+Return valid JSON only. No markdown fences.
 
 OUTPUT FORMAT:
 {
   "answer": "string",
   "citations": [
     {
+      "source_number": 1,
       "page": 27,
       "text": "matched text snippet"
     }
@@ -229,8 +230,10 @@ PROMPT;
             $responseJson = $response->json();
             $text = $this->extractResponseText($responseJson) ?: '';
             $structured = $this->extractStructuredAnswer($text);
-            $answerCitations = $this->mergeCitationMetadata($structured['citations'], $citations);
+            
             $finalAnswer = $structured['answer'] ?: ($text ?: $this->fallbackAnswer($prompt, $trimmedContext, $mode));
+            
+            $answerCitations = $citations;
 
             Log::info('GeminiService: Final formatted response ready', [
                 'final_answer_text' => $finalAnswer,
