@@ -25,10 +25,11 @@ class OpenAIService
     {
         $context = trim($context);
         $hasSourceContext = $context !== '' && $citations !== [];
+        $hasNotebookSources = $hasSourceContext || filled($retrievalNote);
 
         if (! $this->isConfigured()) {
             return [
-                'text' => $this->fallbackAnswer($prompt, $context, $mode),
+                'text' => $this->fallbackAnswer($prompt, $context, $mode, $retrievalNote),
                 'citations' => $citations,
                 'provider' => 'local-fallback',
                 'used_sources' => false,
@@ -47,38 +48,43 @@ class OpenAIService
                             'role' => 'system',
                             'content' => [[
                                 'type' => 'input_text',
-                                'text' => $hasSourceContext ? 'You are NoteGov AI, a modern hybrid RAG + general AI assistant.
+                                'text' => $hasSourceContext ? 'You are NoteGov AI, a source-grounded notebook assistant.
 
-Your job is to help the user intelligently while using uploaded source chunks as optional supporting evidence.
-
-RESPONSE PRIORITIES:
-1. Helpful response
-2. Source grounding when relevant context exists
-3. Natural conversation
-4. Retrieval augmentation
-5. General AI fallback intelligence
-
-RULES:
-1. Use the retrieved source chunks when they directly help answer the question.
-2. Do not invent facts and present them as being from the uploaded source.
-3. If the retrieved chunks do not fully answer the question, do NOT refuse. Answer using general knowledge and clearly separate it from source-backed information.
-4. Never use a bare document-not-found refusal as the whole answer.
-5. You may say: "I could not find this specifically in the uploaded source, but based on general knowledge..."
-6. Include page/snippet citations only for claims supported by retrieved chunks.
-7. If no citation supports a claim, do not attach a source citation to that claim.
-8. Use professional, concise, intelligent wording.
-9. Return valid JSON only. No markdown fences.
+CRITICAL SOURCE RULES:
+1. ALWAYS prioritize uploaded source chunks before any general knowledge.
+2. NEVER answer from general knowledge when source chunks are provided.
+3. Answer ONLY using the provided source chunks.
+4. If the answer is not clearly found in the source chunks, say: "Based on uploaded sources, I could not find enough information to answer this question."
+5. Start with the direct answer. Do not add a generic "Based on uploaded sources" prefix when the source answer is clear.
+6. Cite source chunks inline as [1], [2], matching the source numbers in the provided context.
+7. Only cite information that came from uploaded source chunks.
+8. Do not hallucinate facts, laws, doctrines, or cases.
+9. Treat related source wording as valid evidence. For example, if the user asks about "SDLC" and the source states the project used "Rapid Application Development (RAD)", answer that RAD is the SDLC/development model used.
+10. Understand Taglish/Filipino questions. For example, "anong language ginamit namin?" means the user is asking which programming languages, frameworks, or technologies were used in the source.
+11. Use NotebookLM-style formatting: concise paragraphs, **bold** key terms, and bullets for phases/processes/components.
+12. Use sentence-level citations only. Cite the smallest source passage that fully supports the claim.
+13. Never cite an entire page when the provided Source passage is a smaller exact quote.
+14. Preserve citation metadata from the selected Source passage: page, paragraphIndex, sentenceIndex, exact text, startOffset, endOffset, and confidence.
+15. Return valid JSON only. No markdown fences.
 
 OUTPUT FORMAT:
 {
   "answer": "string",
   "citations": [
     {
+      "source_number": 1,
       "page": 27,
-      "text": "matched text snippet"
+      "paragraphIndex": 0,
+      "sentenceIndex": 2,
+      "text": "exact sentence or sentences used as evidence",
+      "startOffset": 1245,
+      "endOffset": 1387,
+      "confidence": 0.98
     }
   ]
-}' : 'You are NoteGov AI, a conversational AI assistant. Answer naturally and helpfully. Uploaded sources are optional context only. Never refuse only because retrieval found no source match.',
+}' : ($hasNotebookSources
+                                    ? 'Uploaded sources exist, but no relevant source chunks were provided. Return exactly: Based on uploaded sources, I could not find enough information in the available source chunks to answer this question.'
+                                    : 'No sources found, using general knowledge. You are NoteGov AI, a conversational AI assistant. Answer naturally and helpfully. Do not cite uploaded documents when none were provided.'),
                             ]],
                         ],
                         [
@@ -87,7 +93,7 @@ OUTPUT FORMAT:
                                 'type' => 'input_text',
                                 'text' => $hasSourceContext
                                     ? "Retrieved PDF context chunks:\n{$context}\n\nQuestion:\n{$prompt}"
-                                    : trim(($retrievalNote ? "Retrieval note: {$retrievalNote}\nIf useful, briefly mention that you could not find a direct reference in the uploaded source, then answer normally using general knowledge.\n\n" : '')."User message:\n{$prompt}"),
+                                    : trim(($retrievalNote ? "Retrieval note: {$retrievalNote}\n\n" : '')."User message:\n{$prompt}"),
                             ]],
                         ],
                     ],
@@ -98,9 +104,12 @@ OUTPUT FORMAT:
             $rawText = $this->extractResponseText($response) ?: '';
             $structured = $hasSourceContext ? $this->extractStructuredAnswer($rawText) : ['answer' => $rawText, 'citations' => []];
             $answerCitations = $hasSourceContext ? $this->mergeCitationMetadata($structured['citations'], $citations) : [];
+            $answerCitations = $hasSourceContext && $answerCitations === []
+                ? $this->citationsFromInlineSourceMarkers($structured['answer'] ?: $rawText, $citations)
+                : $answerCitations;
 
             return [
-                'text' => $structured['answer'] ?: ($rawText ?: $this->fallbackAnswer($prompt, $context, $mode)),
+                'text' => $structured['answer'] ?: ($rawText ?: $this->fallbackAnswer($prompt, $context, $mode, $retrievalNote)),
                 'citations' => $answerCitations,
                 'provider' => 'openai',
                 'used_sources' => $answerCitations !== [],
@@ -109,7 +118,7 @@ OUTPUT FORMAT:
             report($exception);
 
             return [
-                'text' => $this->fallbackAnswer($prompt, $context, $mode),
+                'text' => $this->fallbackAnswer($prompt, $context, $mode, $retrievalNote),
                 'citations' => $citations,
                 'provider' => 'local-fallback',
                 'used_sources' => false,
@@ -255,9 +264,14 @@ OUTPUT FORMAT:
 
         return collect($modelCitations)
             ->map(function (array $citation) use ($availableCitations): array {
+                $sourceNumber = (int) ($citation['source_number'] ?? $citation['citation_number'] ?? 0);
                 $page = (int) ($citation['page'] ?? $citation['page_number'] ?? 1);
                 $text = trim((string) ($citation['text'] ?? ''));
-                $source = collect($availableCitations)->first(function (array $available) use ($page, $text): bool {
+                $source = $sourceNumber > 0
+                    ? collect($availableCitations)->first(fn (array $available) => (int) ($available['citation_number'] ?? 0) === $sourceNumber)
+                    : null;
+
+                $source ??= collect($availableCitations)->first(function (array $available) use ($page, $text): bool {
                     if ((int) ($available['page'] ?? $available['page_number'] ?? 1) !== $page) {
                         return false;
                     }
@@ -267,11 +281,26 @@ OUTPUT FORMAT:
                     return $text === '' || str_contains($availableText, $text) || str_contains($text, $availableText);
                 }) ?? collect($availableCitations)->first(fn (array $available) => (int) ($available['page'] ?? $available['page_number'] ?? 1) === $page) ?? [];
 
+                $hasMatchedSource = $source !== null && $source !== [];
+                $trustedPage = $hasMatchedSource ? (int) ($source['page'] ?? $source['page_number'] ?? $page) : $page;
+                $trustedText = $hasMatchedSource
+                    ? ($source['quote'] ?? $source['text'] ?? $source['evidence_snippet'] ?? $text)
+                    : $text;
+
                 return array_filter(array_merge($source, [
-                    'page' => $page,
-                    'page_number' => $page,
-                    'text' => $text ?: ($source['text'] ?? $source['evidence_snippet'] ?? null),
-                    'evidence_snippet' => $text ?: ($source['evidence_snippet'] ?? $source['text'] ?? null),
+                    'citation_number' => $sourceNumber ?: ($source['citation_number'] ?? null),
+                    'page' => $trustedPage,
+                    'page_number' => $trustedPage,
+                    'paragraph_index' => $hasMatchedSource ? ($source['paragraph_index'] ?? null) : ($citation['paragraph_index'] ?? $citation['paragraphIndex'] ?? null),
+                    'paragraphIndex' => $hasMatchedSource ? ($source['paragraphIndex'] ?? $source['paragraph_index'] ?? null) : ($citation['paragraphIndex'] ?? $citation['paragraph_index'] ?? null),
+                    'sentence_index' => $hasMatchedSource ? ($source['sentence_index'] ?? null) : ($citation['sentence_index'] ?? $citation['sentenceIndex'] ?? null),
+                    'sentenceIndex' => $hasMatchedSource ? ($source['sentenceIndex'] ?? $source['sentence_index'] ?? null) : ($citation['sentenceIndex'] ?? $citation['sentence_index'] ?? null),
+                    'startOffset' => $hasMatchedSource ? ($source['startOffset'] ?? null) : ($citation['startOffset'] ?? $citation['start_offset'] ?? null),
+                    'endOffset' => $hasMatchedSource ? ($source['endOffset'] ?? null) : ($citation['endOffset'] ?? $citation['end_offset'] ?? null),
+                    'confidence' => $hasMatchedSource ? ($source['confidence'] ?? null) : ($citation['confidence'] ?? null),
+                    'quote' => $trustedText,
+                    'text' => $trustedText,
+                    'evidence_snippet' => $trustedText,
                 ]), fn ($value) => $value !== null && $value !== '');
             })
             ->filter(fn (array $citation) => filled($citation['text'] ?? null))
@@ -280,14 +309,43 @@ OUTPUT FORMAT:
     }
 
     /**
+     * @param array<int,array<string,mixed>> $availableCitations
+     * @return array<int,array<string,mixed>>
+     */
+    protected function citationsFromInlineSourceMarkers(string $answer, array $availableCitations): array
+    {
+        preg_match_all('/\[(?:Source\s*)?(\d+)\]/i', $answer, $matches);
+        $sourceNumbers = collect($matches[1] ?? [])
+            ->map(fn (string $number): int => (int) $number)
+            ->filter(fn (int $number): bool => $number > 0)
+            ->unique()
+            ->values();
+
+        if ($sourceNumbers->isEmpty()) {
+            return [];
+        }
+
+        return $sourceNumbers
+            ->map(fn (int $sourceNumber): ?array => collect($availableCitations)
+                ->first(fn (array $citation): bool => (int) ($citation['citation_number'] ?? 0) === $sourceNumber))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
      * Build a deterministic fallback answer.
      */
-    protected function fallbackAnswer(string $prompt, string $context, string $mode): string
+    protected function fallbackAnswer(string $prompt, string $context, string $mode, ?string $retrievalNote = null): string
     {
         $context = trim($context);
 
+        if ($context === '' && filled($retrievalNote)) {
+            return 'Based on uploaded sources, I could not find enough information in the available source chunks to answer this question.';
+        }
+
         if ($context === '') {
-            return "Hello! I'm NoteGov AI. How can I help you today?";
+            return "No sources found, using general knowledge. Hello! I'm NoteGov AI. How can I help you today?";
         }
 
         return "NoteGov AI is currently unavailable. Please try again later.";

@@ -987,7 +987,25 @@
                 font-size: 16px;
                 line-height: 1.65;
                 margin: 0;
-                white-space: pre-wrap;
+                white-space: normal;
+            }
+            .chat-content p {
+                margin: 0 0 14px;
+            }
+            .chat-content p:last-child {
+                margin-bottom: 0;
+            }
+            .chat-content ul {
+                margin: 10px 0 0 22px;
+                padding: 0;
+            }
+            .chat-content li {
+                margin: 8px 0;
+                padding-left: 2px;
+            }
+            .chat-content strong {
+                font-weight: 800;
+                color: #1f2937;
             }
             .chat-meta {
                 display: inline-flex;
@@ -1070,6 +1088,62 @@
 
             .references-container.expanded {
                 max-height: 2000px;
+            }
+
+            .uploaded-sources-panel {
+                margin-top: 8px;
+                font-size: 12px;
+                border-top: 1px solid #eef2f7;
+                padding-top: 8px;
+            }
+
+            .uploaded-sources-toggle {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 8px 10px;
+                border: 1px solid #e2e8f0;
+                background: #f8fafc;
+                color: #475569;
+                border-radius: 10px;
+                font-size: 12px;
+                font-weight: 800;
+                cursor: pointer;
+                transition: all 180ms ease;
+            }
+
+            .uploaded-sources-toggle:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+                color: #1e293b;
+            }
+
+            .uploaded-sources-toggle-left,
+            .uploaded-sources-toggle-count {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                min-width: 0;
+            }
+
+            .uploaded-sources-toggle-count {
+                flex: 0 0 auto;
+                gap: 6px;
+                color: #64748b;
+                font-size: 11px;
+                font-weight: 800;
+            }
+
+            .uploaded-sources-toggle svg {
+                width: 14px;
+                height: 14px;
+                transition: transform 220ms ease;
+            }
+
+            .uploaded-sources-toggle.expanded svg {
+                transform: rotate(180deg);
             }
 
             .show-more-btn {
@@ -2319,6 +2393,7 @@
                                             
                                             <template x-if="message.metadata && message.metadata.uploaded_source_links && message.metadata.uploaded_source_links.length > 0">
                                                 <div x-data="{ 
+                                                    collapsed: true,
                                                     showAll: false, 
                                                     visibleCount: 3,
                                                     sources: message.metadata.uploaded_source_links,
@@ -2329,9 +2404,22 @@
                                                     get hiddenSources() { 
                                                         return this.showAll ? [] : this.sources.slice(this.visibleCount); 
                                                     }
-                                                }" style="margin-top: 8px; font-size: 12px;">
-                                                    <div style="font-weight: 700; margin-bottom: 4px;">Uploaded Sources Used:</div>
-                                                    <div class="references-container" :class="{ 'expanded': showAll }">
+                                                }" class="uploaded-sources-panel">
+                                                    <button type="button"
+                                                            class="uploaded-sources-toggle"
+                                                            :class="{ 'expanded': !collapsed }"
+                                                            @click="collapsed = !collapsed; if (!collapsed) { $nextTick(() => { const items = $el.parentElement.querySelectorAll('.assistant-source-item'); items.forEach((el, idx) => { setTimeout(() => { el.classList.add('visible'); }, idx * 35); }); }); }">
+                                                        <span class="uploaded-sources-toggle-left">
+                                                            <span>Uploaded Sources Used</span>
+                                                        </span>
+                                                        <span class="uploaded-sources-toggle-count">
+                                                            <span x-text="`${sources.length} source${sources.length === 1 ? '' : 's'}`"></span>
+                                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                            </svg>
+                                                        </span>
+                                                    </button>
+                                                    <div class="references-container" :class="{ 'expanded': !collapsed }">
                                                         <div style="display: flex; flex-direction: column; gap: 4px;">
                                                             <template x-for="(source, index) in visibleSources" :key="index">
                                                                 <div class="assistant-source-item" 
@@ -2343,8 +2431,7 @@
                                                                      })">
                                                                     <a :href="source.url" target="_blank" rel="noopener noreferrer"
                                                                        style="color: #2563eb; text-decoration: underline; word-break: break-word; font-weight: 700;"
-                                                                       x-text="source.page ? `${source.name} - Page ${source.page}` : source.name"></a>
-                                                                    <div x-text="source.url" style="margin-top: 3px; color: #64748b; font-size: 11px; line-height: 1.45; word-break: break-all;"></div>
+                                                                       x-text="`${source.source_number ? '[Source ' + source.source_number + '] ' : ''}${source.page ? source.name + ' - Page ' + source.page : source.name}`"></a>
                                                                     <template x-if="source.evidence_snippet">
                                                                         <div x-text="source.evidence_snippet" style="margin-top: 6px; color: #64748b; font-size: 11px; line-height: 1.45;"></div>
                                                                     </template>
@@ -2363,8 +2450,7 @@
                                                                      x-transition>
                                                                     <a :href="source.url" target="_blank" rel="noopener noreferrer"
                                                                        style="color: #2563eb; text-decoration: underline; word-break: break-word; font-weight: 700;"
-                                                                       x-text="source.page ? `${source.name} - Page ${source.page}` : source.name"></a>
-                                                                    <div x-text="source.url" style="margin-top: 3px; color: #64748b; font-size: 11px; line-height: 1.45; word-break: break-all;"></div>
+                                                                       x-text="`${source.source_number ? '[Source ' + source.source_number + '] ' : ''}${source.page ? source.name + ' - Page ' + source.page : source.name}`"></a>
                                                                     <template x-if="source.evidence_snippet">
                                                                         <div x-text="source.evidence_snippet" style="margin-top: 6px; color: #64748b; font-size: 11px; line-height: 1.45;"></div>
                                                                     </template>
@@ -2372,7 +2458,7 @@
                                                             </template>
                                                         </div>
                                                     </div>
-                                                    <template x-if="shouldShowButton">
+                                                    <template x-if="!collapsed && shouldShowButton">
                                                         <button type="button" 
                                                                 class="show-more-btn" 
                                                                 :class="{ 'expanded': showAll }"
@@ -2439,7 +2525,7 @@
                                                     }
                                                 }" style="margin-top: 8px; font-size: 12px;">
                                                     <div style="font-weight: 700; margin-bottom: 4px;">Web Sources Used:</div>
-                                                    <div class="web-sources-container" :class="{ 'expanded': showAll }">
+                                                    <div class="web-sources-container" :class="{ 'expanded': showAll || !shouldShowButton }">
                                                         <div style="display: flex; flex-direction: column; gap: 6px;">
                                                             <template x-for="(source, index) in visibleSources" :key="index">
                                                                 <a :href="source.url" target="_blank" rel="noopener noreferrer" class="web-source-link">
@@ -2505,19 +2591,13 @@
                                                 </div>
                                             </template>
 
-                                            <template x-if="message.metadata && message.metadata.provider === 'gemini-conversational'">
+                                            <template x-if="message.metadata && message.metadata.provider === 'gemini-conversational' && (!message.metadata.web_source_links || message.metadata.web_source_links.length === 0)">
                                                 <div class="assistant-source-details">
                                                     <div class="assistant-source-summary">
                                                         <svg style="width: 14px; height: 14px; flex: 0 0 auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                         </svg>
-                                                        <span>Used web source context</span>
-                                                    </div>
-                                                    <div class="assistant-source-group">
-                                                        <div class="assistant-source-title">Web Sources</div>
-                                                        <div class="assistant-source-list">
-                                                            <div class="assistant-source-item">Answer came from web/general AI knowledge.</div>
-                                                        </div>
+                                                        <span>No web source links were returned by the model.</span>
                                                     </div>
                                                 </div>
                                             </template>
@@ -3016,25 +3096,56 @@
                     isLoading: false,
                     renderContentWithCitations(content, citations) {
                         if (!content) return '';
-                        let html = this.escapeHtml(content);
+                        let html = this.renderBasicMarkdown(content);
                         
-                        html = html.replace(/\[(\d+)\]/g, (match, num) => {
+                        html = html.replace(/\[(?:Source\s*)?(\d+)\]/gi, (match, num) => {
                             const index = parseInt(num) - 1;
-                            const citation = citations && citations[index] ? citations[index] : null;
+                            const sourceNumber = parseInt(num);
+                            const citation = citations
+                                ? (citations.find((item) => parseInt(item.citation_number || item.source_number || 0) === sourceNumber) || citations[index] || null)
+                                : null;
                             
                             if (!citation) {
-                                return `<span class="text-gray-500 text-sm">[${num}]</span>`;
+                                return `<span class="text-gray-500 text-sm">${this.escapeHtml(match)}</span>`;
                             }
                             
                             const filename = citation.source_name || 'Uploaded source';
                             const page = citation.page_number || citation.page || 1;
-                            const snippet = citation.evidence_snippet || citation.text || '';
+                            const snippet = citation.quote || citation.evidence_snippet || citation.text || '';
                             const sourceId = citation.source_id;
-                            const viewerUrl = sourceId ? `/viewer/${sourceId}?page=${page}` : '#';
+                            const highlight = snippet ? snippet.slice(0, 700) : '';
+                            const citationParams = new URLSearchParams({
+                                page: page,
+                                highlight: highlight,
+                            });
+
+                            if (citation.paragraph_index !== undefined && citation.paragraph_index !== null) {
+                                citationParams.set('paragraph', citation.paragraph_index);
+                            } else if (citation.paragraphIndex !== undefined && citation.paragraphIndex !== null) {
+                                citationParams.set('paragraph', citation.paragraphIndex);
+                            }
+
+                            if (citation.sentence_index !== undefined && citation.sentence_index !== null) {
+                                citationParams.set('sentence', citation.sentence_index);
+                            } else if (citation.sentenceIndex !== undefined && citation.sentenceIndex !== null) {
+                                citationParams.set('sentence', citation.sentenceIndex);
+                            }
+
+                            if (citation.startOffset !== undefined && citation.startOffset !== null) {
+                                citationParams.set('start', citation.startOffset);
+                            }
+
+                            if (citation.endOffset !== undefined && citation.endOffset !== null) {
+                                citationParams.set('end', citation.endOffset);
+                            }
+
+                            const viewerUrl = sourceId
+                                ? `/viewer/${sourceId}?${citationParams.toString()}`
+                                : '#';
                             
                             return `
                                 <a href="${viewerUrl}" target="_blank" class="citation-link" onclick="event.preventDefault(); window.open('${viewerUrl}', '_blank'); return false;">
-                                    [${num}]
+                                    ${this.escapeHtml(num)}
                                     <div class="citation-preview">
                                         <div class="citation-preview-header">
                                             <span class="citation-preview-filename">${this.escapeHtml(filename)}</span>
@@ -3047,6 +3158,59 @@
                         });
                         
                         return html;
+                    },
+                    renderBasicMarkdown(content) {
+                        const lines = content.split(/\r?\n/);
+                        let html = '';
+                        let paragraph = [];
+                        let inList = false;
+
+                        const flushParagraph = () => {
+                            if (!paragraph.length) return;
+                            html += `<p>${this.formatInlineMarkdown(paragraph.join(' '))}</p>`;
+                            paragraph = [];
+                        };
+
+                        const closeList = () => {
+                            if (!inList) return;
+                            html += '</ul>';
+                            inList = false;
+                        };
+
+                        lines.forEach((line) => {
+                            const trimmed = line.trim();
+
+                            if (!trimmed) {
+                                flushParagraph();
+                                closeList();
+                                return;
+                            }
+
+                            const bullet = trimmed.match(/^[-*]\s+(.+)$/);
+
+                            if (bullet) {
+                                flushParagraph();
+                                if (!inList) {
+                                    html += '<ul>';
+                                    inList = true;
+                                }
+                                html += `<li>${this.formatInlineMarkdown(bullet[1])}</li>`;
+                                return;
+                            }
+
+                            closeList();
+                            paragraph.push(trimmed);
+                        });
+
+                        flushParagraph();
+                        closeList();
+
+                        return html;
+                    },
+                    formatInlineMarkdown(text) {
+                        let html = this.escapeHtml(text);
+
+                        return html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
                     },
                     escapeHtml(text) {
                         const div = document.createElement('div');

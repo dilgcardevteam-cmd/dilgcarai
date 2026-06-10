@@ -13,12 +13,20 @@ class PdfViewerController extends Controller
         $page = $request->integer('page', 1);
         $chunkIndex = $request->integer('chunk', null);
         $highlightText = $request->string('highlight', '')->toString();
+        $paragraphIndex = $request->integer('paragraph', null);
+        $sentenceIndex = $request->integer('sentence', null);
+        $startOffset = $request->integer('start', null);
+        $endOffset = $request->integer('end', null);
 
         return view('pdf-viewer.show', [
             'source' => $source,
             'page' => $page,
             'chunkIndex' => $chunkIndex,
             'highlightText' => $highlightText,
+            'paragraphIndex' => $paragraphIndex,
+            'sentenceIndex' => $sentenceIndex,
+            'startOffset' => $startOffset,
+            'endOffset' => $endOffset,
         ]);
     }
 

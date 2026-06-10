@@ -43,6 +43,19 @@
             padding: 2px 4px;
             border-radius: 4px;
         }
+        .textLayer {
+            pointer-events: none;
+        }
+        .textLayer span {
+            color: transparent !important;
+        }
+        .citation-highlight {
+            background: rgba(250, 204, 21, 0.55) !important;
+            border-radius: 3px;
+            outline: 2px solid rgba(234, 179, 8, 0.85);
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+        }
     </style>
 </head>
 <body>
@@ -76,6 +89,12 @@
         let currentScale = 1.0;
         const targetPage = {{ $page }};
         const highlightText = @json($highlightText);
+        const targetParagraph = @json($paragraphIndex);
+        const targetSentence = @json($sentenceIndex);
+        const targetStartOffset = @json($startOffset);
+        const targetEndOffset = @json($endOffset);
+        const pageTexts = new Map();
+        const pageDetails = new Map();
 
         const pdfUrl = "{{ route('pdf.stream', $source) }}";
 
@@ -89,12 +108,12 @@
                     await renderPage(i);
                 }
 
+                const resolvedPage = resolveTargetPage();
+                document.getElementById('current-page').textContent = resolvedPage;
+
                 setTimeout(() => {
-                    const pageElement = document.getElementById(`page-${targetPage}`);
-                    if (pageElement) {
-                        pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                }, 500);
+                    scrollToPage(resolvedPage);
+                }, 350);
             } catch (error) {
                 console.error('Error loading PDF:', error);
             }
@@ -126,6 +145,8 @@
             await page.render(renderContext).promise;
 
             const textContent = await page.getTextContent();
+            const rawText = textContent.items.map((item) => item.str || '').join(' ');
+            pageTexts.set(pageNum, normalizeText(rawText));
             const textLayerDiv = document.createElement('div');
             textLayerDiv.className = 'textLayer';
             textLayerDiv.style.position = 'absolute';
@@ -134,18 +155,223 @@
             textLayerDiv.style.right = '0';
             textLayerDiv.style.bottom = '0';
             textLayerDiv.style.overflow = 'hidden';
-            textLayerDiv.style.opacity = '0.2';
+            textLayerDiv.style.opacity = '1';
             
             textLayerDiv.style.setProperty('--scale-factor', scale);
 
             wrapper.appendChild(textLayerDiv);
 
-            pdfjsLib.renderTextLayer({
+            const textDivs = [];
+            const textLayerTask = pdfjsLib.renderTextLayer({
                 textContent: textContent,
                 container: textLayerDiv,
                 viewport: viewport,
-                textDivs: []
+                textDivs: textDivs
             });
+
+            await (textLayerTask?.promise ?? Promise.resolve());
+
+            pageDetails.set(pageNum, {
+                rawText: rawText,
+                normalizedText: normalizeText(rawText),
+                textContent: textContent,
+                textDivs: textDivs,
+            });
+        }
+
+        function normalizeText(value) {
+            return (value || '')
+                .toString()
+                .toLowerCase()
+                .replace(/\s+/g, ' ')
+                .replace(/[^\p{L}\p{N}\s]/gu, '')
+                .trim();
+        }
+
+        function resolveTargetPage() {
+            const normalizedHighlight = normalizeText(highlightText);
+            const requestedPage = clampPage(targetPage);
+
+            if (!normalizedHighlight) {
+                return requestedPage;
+            }
+
+            const compactHighlight = normalizedHighlight.slice(0, 450);
+            const requestedPageText = pageTexts.get(requestedPage) || '';
+            const requestedTerms = compactHighlight
+                .split(' ')
+                .filter((term) => term.length > 3)
+                .slice(0, 18);
+            const requestedScore = requestedTerms.reduce((total, term) => total + (requestedPageText.includes(term) ? 1 : 0), 0);
+
+            // Citation metadata is the source of truth. Only search other pages when
+            // the requested page clearly does not contain the cited passage.
+            if (
+                requestedPageText.includes(compactHighlight) ||
+                requestedScore >= Math.min(4, Math.max(1, Math.ceil(requestedTerms.length * 0.35)))
+            ) {
+                return requestedPage;
+            }
+
+            for (const [pageNum, pageText] of pageTexts.entries()) {
+                if (pageText.includes(compactHighlight) || compactHighlight.includes(pageText.slice(0, 220))) {
+                    return pageNum;
+                }
+            }
+
+            const terms = compactHighlight
+                .split(' ')
+                .filter((term) => term.length > 4)
+                .slice(0, 24);
+
+            if (!terms.length) {
+                return requestedPage;
+            }
+
+            let bestPage = requestedPage;
+            let bestScore = -1;
+
+            for (const [pageNum, pageText] of pageTexts.entries()) {
+                const score = terms.reduce((total, term) => total + (pageText.includes(term) ? 1 : 0), 0);
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestPage = pageNum;
+                }
+            }
+
+            return bestScore > 0 ? bestPage : clampPage(targetPage);
+        }
+
+        function clampPage(page) {
+            if (!pdfDoc) return Math.max(1, page || 1);
+
+            return Math.min(Math.max(1, page || 1), pdfDoc.numPages);
+        }
+
+        function scrollToPage(page) {
+            const pageElement = document.getElementById(`page-${page}`);
+
+            if (pageElement) {
+                const highlighted = highlightCitation(page);
+
+                if (highlighted) {
+                    highlighted.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                    return;
+                }
+
+                pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function highlightCitation(page) {
+            document.querySelectorAll('.citation-highlight').forEach((element) => {
+                element.classList.remove('citation-highlight');
+            });
+
+            const details = pageDetails.get(page);
+
+            if (!details || !highlightText) {
+                return null;
+            }
+
+            const normalizedHighlight = normalizeText(highlightText);
+            const terms = normalizedHighlight
+                .split(' ')
+                .filter((term) => term.length > 3)
+                .slice(0, 30);
+
+            let firstMatch = null;
+            const visibleDivs = details.textDivs.filter((div) => isUsableTextDiv(div));
+            const selectedDivs = findBestTextDivWindow(visibleDivs, normalizedHighlight, terms);
+
+            selectedDivs.forEach((div) => {
+                div.classList.add('citation-highlight');
+                firstMatch ??= div;
+            });
+
+            if (!firstMatch) {
+                firstMatch = highlightFallbackTerms(visibleDivs, terms);
+            }
+
+            return firstMatch;
+        }
+
+        function isUsableTextDiv(div) {
+            const text = normalizeText(div.textContent || '');
+
+            if (text.length < 2) {
+                return false;
+            }
+
+            const rect = div.getBoundingClientRect();
+
+            return rect.width > 3 && rect.height > 3;
+        }
+
+        function findBestTextDivWindow(divs, normalizedHighlight, terms) {
+            if (!divs.length || !terms.length) {
+                return [];
+            }
+
+            const maxWindow = Math.min(12, divs.length);
+            let best = {
+                score: 0,
+                divs: [],
+            };
+
+            for (let start = 0; start < divs.length; start++) {
+                let combined = '';
+                const windowDivs = [];
+
+                for (let end = start; end < Math.min(divs.length, start + maxWindow); end++) {
+                    const divText = normalizeText(divs[end].textContent || '');
+
+                    if (!divText) {
+                        continue;
+                    }
+
+                    combined = `${combined} ${divText}`.trim();
+                    windowDivs.push(divs[end]);
+
+                    const score = terms.reduce((total, term) => total + (combined.includes(term) ? 1 : 0), 0);
+                    const exactBonus = normalizedHighlight.includes(combined) || combined.includes(normalizedHighlight.slice(0, 80)) ? 8 : 0;
+                    const totalScore = score + exactBonus;
+
+                    if (totalScore > best.score) {
+                        best = {
+                            score: totalScore,
+                            divs: [...windowDivs],
+                        };
+                    }
+                }
+            }
+
+            const minimumScore = Math.min(4, Math.max(1, Math.ceil(terms.length * 0.35)));
+
+            return best.score >= minimumScore ? best.divs : [];
+        }
+
+        function highlightFallbackTerms(divs, terms) {
+            let firstMatch = null;
+            let matched = 0;
+
+            divs.forEach((div) => {
+                if (matched >= 8) {
+                    return;
+                }
+
+                const normalizedDivText = normalizeText(div.textContent || '');
+                const termMatch = terms.some((term) => normalizedDivText.includes(term));
+
+                if (termMatch) {
+                    div.classList.add('citation-highlight');
+                    firstMatch ??= div;
+                    matched++;
+                }
+            });
+
+            return firstMatch;
         }
 
         document.getElementById('zoom-in').addEventListener('click', () => {
@@ -163,6 +389,8 @@
         function updateZoom() {
             document.getElementById('zoom-level').textContent = Math.round(currentScale * 100) + '%';
             container.innerHTML = '';
+            pageTexts.clear();
+            pageDetails.clear();
             loadPdf();
         }
 

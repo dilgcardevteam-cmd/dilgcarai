@@ -46,7 +46,7 @@ class NotebookChatApiController extends Controller
             'selected_source_ids' => $selectedSourceIds,
         ]);
 
-        $contextPayload = $rag->buildContext($notebook, $prompt, 4, $selectedSourceIds);
+        $contextPayload = $rag->buildContext($notebook, $prompt, 8, $selectedSourceIds);
 
         Log::info('NotebookChatApiController: Context built', [
             'context_length' => strlen($contextPayload['context']),
@@ -96,13 +96,33 @@ class NotebookChatApiController extends Controller
             ->map(function ($source) use ($notebook) {
                 $sourceId = $source['source_id'] ?? null;
                 $page = $source['page_number'] ?? $source['page'] ?? null;
+                $type = $source['type'] ?? null;
+                $quote = $source['quote'] ?? $source['text'] ?? $source['evidence_snippet'] ?? '';
+                $highlight = str($quote)->limit(700, '')->toString();
 
                 return [
+                    'source_number' => $source['citation_number'] ?? $source['source_number'] ?? null,
                     'name' => $source['source_name'] ?? 'Uploaded source',
-                    'url' => $sourceId
-                        ? URL::route('notebooks.sources.show', [$notebook, $sourceId])
-                        : ($source['source_url'] ?? null),
+                    'url' => $sourceId && $type === 'pdf'
+                        ? URL::route('pdf.viewer', [
+                            'source' => $sourceId,
+                            'page' => $page ?: 1,
+                            'highlight' => $highlight,
+                            'paragraph' => $source['paragraph_index'] ?? $source['paragraphIndex'] ?? null,
+                            'sentence' => $source['sentence_index'] ?? $source['sentenceIndex'] ?? null,
+                            'start' => $source['startOffset'] ?? null,
+                            'end' => $source['endOffset'] ?? null,
+                        ])
+                        : ($sourceId
+                            ? URL::route('notebooks.sources.show', [$notebook, $sourceId])
+                            : ($source['source_url'] ?? null)),
                     'page' => $page,
+                    'paragraph_index' => $source['paragraph_index'] ?? $source['paragraphIndex'] ?? null,
+                    'sentence_index' => $source['sentence_index'] ?? $source['sentenceIndex'] ?? null,
+                    'startOffset' => $source['startOffset'] ?? null,
+                    'endOffset' => $source['endOffset'] ?? null,
+                    'confidence' => $source['confidence'] ?? null,
+                    'quote' => $quote,
                     'evidence_snippet' => $source['text'] ?? $source['evidence_snippet'] ?? null,
                 ];
             })
